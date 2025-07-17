@@ -29,6 +29,5 @@ namespace finance_management.Models
 
         public string? Kind { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

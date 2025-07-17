@@ -13,9 +13,13 @@ namespace finance_management.Mapping
             Map(m => m.Id).Name("id");
             Map(m => m.BeneficiaryName).Name("beneficiary-name");
             Map(m => m.Date)
-                .Name("date")
-                .TypeConverterOption.Format("M/d/yyyy")
-                .TypeConverterOption.CultureInfo(CultureInfo.InvariantCulture);
+            .Name("date")
+            .Convert(row =>
+            {
+                var date = row.Row.GetField("date");
+                var parsed = DateTime.Parse(date, CultureInfo.InvariantCulture);
+                return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+            });
             Map(m => m.Direction).Name("direction");
             Map(m => m.Amount)
                 .Name("amount")

@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using finance_management.Database;
+using finance_management.DTOs;
 using finance_management.Mapping;
 using finance_management.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -21,10 +22,10 @@ namespace finance_management.Controllers
         }
 
         [HttpPost("import")]
-        public async Task<IActionResult> Import([FromForm] IFormFile file)
+        public async Task<IActionResult> Import([FromForm] ImportTransactionsRequest request)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("CSV fajl nije prosleđen.");
+            var file = request.File;
+            if (file == null || file.Length == 0) return BadRequest("CSV fajl nije prosleđen.");
 
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
