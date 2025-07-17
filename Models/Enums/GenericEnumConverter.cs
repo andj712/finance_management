@@ -11,7 +11,13 @@ namespace finance_management.Models.Enums
         {
             if (string.IsNullOrWhiteSpace(text))
             {
-                return null; 
+                // Ako je nullable enum, vrati null
+                var underlyingType = Nullable.GetUnderlyingType(typeof(T));
+                if (underlyingType != null)
+                    return null;
+
+                // Ako nije nullable, vrati default vrednost
+                return default(T);
             }
 
             foreach (var field in typeof(T).GetFields())

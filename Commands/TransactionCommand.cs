@@ -33,8 +33,7 @@ namespace finance_management.Commands
         [Required]
         public TransactionKindEnum Kind { get; set; }
 
-        [Required]
-        public MccCodeEnum MccCode { get; set; }
+        public MccCodeEnum? MccCode { get; set; }
         
     }
 }

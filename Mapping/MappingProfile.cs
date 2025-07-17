@@ -9,8 +9,11 @@ namespace finance_management.Mapping
     {
         public MappingProfile()
         {
-            CreateMap<TransactionCommand, Transaction>();
-                
+            CreateMap<TransactionCommand, Transaction>()
+                .ForMember(dest => dest.Date,
+                     opt => opt.MapFrom(src => DateTime.SpecifyKind(src.Date, DateTimeKind.Utc)));
+
+
         }
     }
 }
