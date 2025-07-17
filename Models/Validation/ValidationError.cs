@@ -1,4 +1,4 @@
-﻿namespace finance_management.Models
+﻿namespace finance_management.Models.Validation
 {
     public class ValidationError
     {

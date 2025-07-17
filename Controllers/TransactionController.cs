@@ -6,6 +6,7 @@ using finance_management.Database;
 using finance_management.DTOs;
 using finance_management.Mapping;
 using finance_management.Models;
+using finance_management.Models.Validation;
 using finance_management.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -86,9 +87,11 @@ namespace finance_management.Controllers
                 skipped
             });
         }
-       
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split(Guid id, [FromBody] SplitTransactionRequest request)
+        public async Task<IActionResult> Split(String id, [FromBody] SplitTransactionRequest request)
         {
             var original = await _db.Transactions.FindAsync(id);
             if (original == null)
@@ -125,7 +128,7 @@ namespace finance_management.Controllers
 
             var newTransaction = new Transaction
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = original.Id,
                 BeneficiaryName = original.BeneficiaryName,
                 Date = original.Date,
                 Direction = original.Direction,
