@@ -25,7 +25,7 @@ namespace finance_management.Models
         [Required]
         public string Currency { get; set; } = string.Empty;
 
-        public int? Mcc { get; set; }
+        public int? MccCode { get; set; }
 
         public string? Kind { get; set; }
 
