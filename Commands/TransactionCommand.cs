@@ -6,7 +6,7 @@ namespace finance_management.Commands
     public class TransactionCommand
     {
         [Required]
-        public Guid Id { get; set; }
+        public string Id { get; set; }
 
         [Required]
         [StringLength(255, ErrorMessage = "Naziv primaoca ne sme biti duži od 255 karaktera")]
@@ -15,7 +15,7 @@ namespace finance_management.Commands
         [Required]
         [RegularExpression(@"^\d{4}-\d{2}-\d{2}$",
             ErrorMessage = "Datum mora biti u formatu YYYY-MM-DD")]
-        public string Date { get; set; }
+        public DateTime Date { get; set; }
 
         [Required]
         public DirectionEnum Direction { get; set; }
