@@ -4,6 +4,7 @@ using CsvHelper.Configuration;
 using finance_management.Commands;
 using finance_management.Database;
 using finance_management.DTOs;
+using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Services;
@@ -31,69 +32,24 @@ namespace finance_management.Controllers
         private readonly IMapper _mapper;
 
         private readonly CsvTransactionImporter _csvImporter;
+        private readonly ITransactionImportService _transactionImportService;
 
-        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper)
+        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService)
         {
             _db = db;
             _csvImporter = csvImporter;
             _mapper= mapper;
+            _transactionImportService = transactionImportService;
         }
 
         [HttpPost("import")]
         public async Task<IActionResult> Import([FromForm] ImportTransactionsRequest request)
         {
-            var file = request.File;
+            (var transactionCommands, var validationError) =
+                await _transactionImportService.ImportTransactionsAsync(request.File);
 
-            //ne moze ni da se pokrene osim ukoliko se ne unese fajl
-            //if (file == null || file.Length == 0)
-            //{
-            //    var errorEnum = file == null ? ErrorEnum.Required : ErrorEnum.EmptyFile;
-
-            //    var error = new ValidationError
-            //    {
-            //        Errors = new List<Errors>
-            //         {
-            //        new Errors
-            //                {
-            //                    Tag = "empty-file",
-            //                    Error = errorEnum,
-            //                    Message = errorEnum.GetEnumDescription()
-            //                }
-            //            }
-            //     };
-
-            //    return BadRequest(error);
-            //}
-            List<TransactionCommand> transactionCommands;
-            try
-            {
-                using var stream = file.OpenReadStream();
-                transactionCommands = _csvImporter.ImportTransactions(stream);
-
-
-
-                if (transactionCommands == null || transactionCommands.Count == 0)
-                {
-                    var error = new ValidationError
-                    {
-                        Errors = new List<Errors>
-            {
-                new Errors
-                {
-                    Tag = "csv-file",
-                    Error = ErrorEnum.EmptyFile,
-                    Message = ErrorEnum.EmptyFile.GetEnumDescription()
-                }
-            }
-                    };
-
-                    return BadRequest(JsonConvert.SerializeObject(error, Formatting.Indented));
-                }
-            }
-            catch (CsvHelperException ex)
-            {
-                return BadRequest($"Pogrešan CSV format: {ex.Message}");
-            }
+            if (validationError != null)
+                return BadRequest(validationError);
 
             var mappedTransactions = transactionCommands
                 .Select(cmd =>
@@ -106,7 +62,6 @@ namespace finance_management.Controllers
 
             var allCsvIds = mappedTransactions.Select(t => t.Id).ToHashSet();
 
-           
             var existingIds = await _db.Transactions
                 .Where(t => allCsvIds.Contains(t.Id))
                 .Select(t => t.Id)

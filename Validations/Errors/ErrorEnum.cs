@@ -11,6 +11,14 @@ namespace finance_management.Validations.Errors
         [Description("CSV file is empty")]
         [EnumMember(Value = "empty-file")]
         EmptyFile,
-        
+
+        [Description("Mandatory field or parameter was not supplied")]
+        [EnumMember(Value = "required")]
+        Required,
+
+        [Description("Value supplied does not have expected format")]
+        [EnumMember(Value = "invalid-format")]
+        InvalidFormat
+
     }
 }
