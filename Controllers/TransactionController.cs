@@ -33,13 +33,31 @@ namespace finance_management.Controllers
 
         private readonly CsvTransactionImporter _csvImporter;
         private readonly ITransactionImportService _transactionImportService;
+        private readonly ITransactionService _transactionService;
 
-        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService)
+
+        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService, ITransactionService transactionService)
         {
             _db = db;
             _csvImporter = csvImporter;
             _mapper= mapper;
             _transactionImportService = transactionImportService;
+            _transactionService = transactionService;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<Transaction>>> GetAllTransactions(
+                   [FromQuery] string? transactionKind = null,
+                   [FromQuery] DateTime? startDate = null,
+                   [FromQuery] DateTime? endDate = null,
+                   [FromQuery] int page = 1,
+                   [FromQuery] int pageSize = 10,
+                   [FromQuery] string? sortBy = null,
+                   [FromQuery] string sortOrder = "asc")
+        {
+            var transactions = await _transactionService.GetAllTransactionsAsync(
+                transactionKind, startDate, endDate, page, pageSize, sortBy, sortOrder);
+            return Ok(transactions);
         }
 
         [HttpPost("import")]
