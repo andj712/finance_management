@@ -7,8 +7,10 @@ using finance_management.DTOs;
 using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Models;
+using finance_management.Queries.GetTransactions;
 using finance_management.Services;
 using finance_management.Validations.Errors;
+using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -34,30 +36,49 @@ namespace finance_management.Controllers
         private readonly CsvTransactionImporter _csvImporter;
         private readonly ITransactionImportService _transactionImportService;
         private readonly ITransactionService _transactionService;
+        private readonly IMediator _mediator;
 
-
-        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService, ITransactionService transactionService)
+        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService, ITransactionService transactionService,IMediator mediator)
         {
             _db = db;
             _csvImporter = csvImporter;
             _mapper= mapper;
             _transactionImportService = transactionImportService;
             _transactionService = transactionService;
+            _mediator = mediator;
         }
 
+        
         [HttpGet]
-        public async Task<ActionResult<List<Transaction>>> GetAllTransactions(
-                   [FromQuery] string? transactionKind = null,
-                   [FromQuery] DateTime? startDate = null,
-                   [FromQuery] DateTime? endDate = null,
-                   [FromQuery] int page = 1,
-                   [FromQuery] int pageSize = 10,
-                   [FromQuery] string? sortBy = null,
-                   [FromQuery] string sortOrder = "asc")
+        public async Task<IActionResult> GetAllTransactions(
+            [FromQuery] string? transactionKind = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string sortOrder = "asc")
         {
-            var transactions = await _transactionService.GetAllTransactionsAsync(
-                transactionKind, startDate, endDate, page, pageSize, sortBy, sortOrder);
-            return Ok(transactions);
+            try
+            {
+                var query = new GetTransactionsQuery
+                {
+                    TransactionKind = transactionKind,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Page = page,
+                    PageSize = pageSize,
+                    SortBy = sortBy,
+                    SortOrder = sortOrder
+                };
+
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         [HttpPost("import")]

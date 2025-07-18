@@ -9,6 +9,8 @@ using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
+using MediatR;
+using System.Reflection;
 
 
 
@@ -39,6 +41,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<CsvTransactionImporter>();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
 
 builder.Services.AddScoped<ITransactionImportService, TransactionImportService>();
