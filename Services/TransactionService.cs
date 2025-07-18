@@ -45,12 +45,18 @@ namespace finance_management.Services
             // Filter by date range
             if (startDate.HasValue)
             {
-                query = query.Where(t => t.Date >= startDate.Value);
+                var utcStartDate = startDate.Value.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc)
+                    : startDate.Value.ToUniversalTime();
+                query = query.Where(t => t.Date >= utcStartDate);
             }
 
             if (endDate.HasValue)
             {
-                query = query.Where(t => t.Date <= endDate.Value);
+                var utcEndDate = endDate.Value.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc)
+                    : endDate.Value.ToUniversalTime();
+                query = query.Where(t => t.Date <= utcEndDate);
             }
 
             // Sorting
