@@ -7,6 +7,7 @@ using finance_management.Mapping;
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation.AspNetCore;
+using Newtonsoft.Json.Converters;
 
 
 
@@ -33,7 +34,11 @@ builder.Services.AddControllers()
         fv.RegisterValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
         fv.DisableDataAnnotationsValidation = true;
     });
-
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.Converters.Add(new StringEnumConverter());
+    });
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -6,13 +6,20 @@ using finance_management.Database;
 using finance_management.DTOs;
 using finance_management.Mapping;
 using finance_management.Models;
-using finance_management.Models.Validation;
 using finance_management.Services;
+using finance_management.Validations.Errors;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Office.Interop.Excel;
+using Newtonsoft.Json;
 using System.Formats.Asn1;
 using System.Globalization;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Errors = finance_management.Validations.Errors.Errors;
+
 
 namespace finance_management.Controllers
 {
@@ -36,14 +43,52 @@ namespace finance_management.Controllers
         public async Task<IActionResult> Import([FromForm] ImportTransactionsRequest request)
         {
             var file = request.File;
-            if (file == null || file.Length == 0)
-                return BadRequest("CSV fajl nije prosleđen.");
 
+            //ne moze ni da se pokrene osim ukoliko se ne unese fajl
+            //if (file == null || file.Length == 0)
+            //{
+            //    var errorEnum = file == null ? ErrorEnum.Required : ErrorEnum.EmptyFile;
+
+            //    var error = new ValidationError
+            //    {
+            //        Errors = new List<Errors>
+            //         {
+            //        new Errors
+            //                {
+            //                    Tag = "empty-file",
+            //                    Error = errorEnum,
+            //                    Message = errorEnum.GetEnumDescription()
+            //                }
+            //            }
+            //     };
+
+            //    return BadRequest(error);
+            //}
             List<TransactionCommand> transactionCommands;
             try
             {
                 using var stream = file.OpenReadStream();
                 transactionCommands = _csvImporter.ImportTransactions(stream);
+
+
+
+                if (transactionCommands == null || transactionCommands.Count == 0)
+                {
+                    var error = new ValidationError
+                    {
+                        Errors = new List<Errors>
+            {
+                new Errors
+                {
+                    Tag = "csv-file",
+                    Error = ErrorEnum.EmptyFile,
+                    Message = ErrorEnum.EmptyFile.GetEnumDescription()
+                }
+            }
+                    };
+
+                    return BadRequest(JsonConvert.SerializeObject(error, Formatting.Indented));
+                }
             }
             catch (CsvHelperException ex)
             {
@@ -91,7 +136,7 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split(String id, [FromBody] SplitTransactionRequest request)
+        public async Task<IActionResult> Split(string id, [FromBody] SplitTransactionRequest request)
         {
             var original = await _db.Transactions.FindAsync(id);
             if (original == null)
@@ -100,17 +145,7 @@ namespace finance_management.Controllers
             // Validacija modela
             var validator = new SplitTransactionRequestValidator();
             var validationResult = await validator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => new ValidationError
-                {
-                    Tag = e.PropertyName,
-                    Error = e.ErrorCode ?? "invalid",
-                    Message = e.ErrorMessage
-                }).ToList();
-
-                return BadRequest(new { errors });
-            }
+            
 
             // split mora biti manji ili jednak originalu
             if (request.SplitAmount > original.Amount)
@@ -147,6 +182,8 @@ namespace finance_management.Controllers
 
             return Ok(new { original, newTransaction });
         }
+
+       
 
 
     }
