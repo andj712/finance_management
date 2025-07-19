@@ -3,13 +3,14 @@ using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Mapping;
+using finance_management.Repository;
 using finance_management.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
-using MediatR;
 using System.Reflection;
 
 
@@ -42,7 +43,9 @@ builder.Services.AddScoped<CsvTransactionImporter>();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 
 builder.Services.AddScoped<ITransactionImportService, TransactionImportService>();
 

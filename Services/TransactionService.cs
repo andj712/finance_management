@@ -1,28 +1,21 @@
 ﻿using finance_management.Database;
+using finance_management.Interfaces;
 using finance_management.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace finance_management.Services
 {
-    public interface ITransactionService
-    {
-        Task<List<Transaction>> GetAllTransactionsAsync(
-            string? transactionKind = null,
-            DateTime? startDate = null,
-            DateTime? endDate = null,
-            int page = 1,
-            int pageSize = 10,
-            string? sortBy = null,
-            string sortOrder = "asc");
-    }
+   
 
     public class TransactionService : ITransactionService
     {
-        private readonly PfmDbContext _db;
+        private readonly ITransactionRepository _repo;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public TransactionService(PfmDbContext db)
+        public TransactionService(ITransactionRepository repo, IUnitOfWork unitOfWork)
         {
-            _db = db;
+            _repo = repo;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<List<Transaction>> GetAllTransactionsAsync(
@@ -34,7 +27,7 @@ namespace finance_management.Services
             string? sortBy = null,
             string sortOrder = "asc")
         {
-            var query = _db.Transactions.AsQueryable();
+            var query = _repo.Query();
 
             // Filter by transaction kind
             if (!string.IsNullOrEmpty(transactionKind))
@@ -95,5 +88,7 @@ namespace finance_management.Services
 
             return await query.ToListAsync();
         }
+
+        
     }
 }
