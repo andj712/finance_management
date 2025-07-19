@@ -30,5 +30,21 @@ namespace finance_management.Database
                 entity.HasIndex(e => e.Direction);
             });
         }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                var host = Environment.GetEnvironmentVariable("DATABASE_HOST");
+                var port = Environment.GetEnvironmentVariable("DATABASE_PORT");
+                var dbName = Environment.GetEnvironmentVariable("DATABASE_NAME");
+                var user = Environment.GetEnvironmentVariable("DATABASE_USER");
+                var password = Environment.GetEnvironmentVariable("DATABASE_PASS");
+
+                var connectionString = $"Host={host};Port={port};Database={dbName};Username={user};Password={password}";
+                optionsBuilder.UseNpgsql(connectionString);
+            }
+        }
+
     }
 }
