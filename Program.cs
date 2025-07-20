@@ -1,4 +1,5 @@
 using AutoMapper;
+using DotNetEnv;
 using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Mapping;
@@ -14,6 +15,7 @@ using Newtonsoft.Json.Converters;
 using System.Reflection;
 
 
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,8 +32,12 @@ builder.Services.AddControllers()
     });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
+    ?? throw new InvalidOperationException("PFM_DB nije postavljen u .env");
+
 builder.Services.AddDbContext<PfmDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); builder.Services.AddEndpointsApiExplorer();
+    options.UseNpgsql(connectionString)
+);
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
 builder.Services.AddSwaggerGen(c =>

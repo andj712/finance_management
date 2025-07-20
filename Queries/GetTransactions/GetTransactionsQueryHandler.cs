@@ -1,5 +1,6 @@
 ﻿using finance_management.Database;
 using finance_management.Models;
+using finance_management.Models.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,9 +20,10 @@ namespace finance_management.Queries.GetTransactions
             var query = _db.Transactions.AsQueryable();
 
             // Filter by transaction kind
-            if (!string.IsNullOrEmpty(request.TransactionKind))
+            if (!string.IsNullOrEmpty(request.TransactionKind) &&
+            Enum.TryParse<TransactionKindEnum>(request.TransactionKind, true, out var parsedKind))
             {
-                query = query.Where(t => t.Kind == request.TransactionKind);
+                query = query.Where(t => t.Kind == parsedKind);
             }
 
             // Filter by date range, convert to UTC
