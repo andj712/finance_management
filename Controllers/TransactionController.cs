@@ -33,17 +33,13 @@ namespace finance_management.Controllers
         private readonly PfmDbContext _db;
         private readonly IMapper _mapper;
 
-        private readonly CsvTransactionImporter _csvImporter;
-        private readonly ITransactionImportService _transactionImportService;
         private readonly ITransactionService _transactionService;
         private readonly IMediator _mediator;
 
-        public TransactionController(PfmDbContext db, CsvTransactionImporter csvImporter,IMapper mapper,ITransactionImportService transactionImportService, ITransactionService transactionService,IMediator mediator)
+        public TransactionController(PfmDbContext db,IMapper mapper, ITransactionService transactionService,IMediator mediator)
         {
             _db = db;
-            _csvImporter = csvImporter;
             _mapper= mapper;
-            _transactionImportService = transactionImportService;
             _transactionService = transactionService;
             _mediator = mediator;
         }
@@ -82,50 +78,13 @@ namespace finance_management.Controllers
         }
 
         [HttpPost("import")]
-        public async Task<IActionResult> Import([FromForm] ImportTransactionsRequest request)
+        [Consumes("application/csv")]
+        public async Task<IActionResult> ImportCsv([FromBody] string csv)
         {
-            (var transactionCommands, var validationError) =
-                await _transactionImportService.ImportTransactionsAsync(request.File);
-
-            if (validationError != null)
-                return BadRequest(validationError);
-
-            var mappedTransactions = transactionCommands
-                .Select(cmd =>
-                {
-                    try { return _mapper.Map<Transaction>(cmd); }
-                    catch { return null; }
-                })
-                .Where(x => x != null)
-                .ToList();
-
-            var allCsvIds = mappedTransactions.Select(t => t.Id).ToHashSet();
-
-            var existingIds = await _db.Transactions
-                .Where(t => allCsvIds.Contains(t.Id))
-                .Select(t => t.Id)
-                .ToListAsync();
-
-            var existingIdSet = existingIds.ToHashSet();
-
-            var newTransactions = mappedTransactions
-                .Where(t => !existingIdSet.Contains(t.Id))
-                .ToList();
-
-            var skipped = mappedTransactions.Count - newTransactions.Count;
-
-            if (newTransactions.Any())
-            {
-                await _db.Transactions.AddRangeAsync(newTransactions);
-                await _db.SaveChangesAsync();
-            }
-
-            return Ok(new
-            {
-                imported = newTransactions.Count,
-                skipped
-            });
+            await _mediator.Send(new ImportTransactionsCommand { CsvContent = csv });
+            return Ok();
         }
+
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
