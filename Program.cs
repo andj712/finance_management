@@ -2,8 +2,6 @@ using AutoMapper;
 using DotNetEnv;
 using finance_management.Database;
 using finance_management.Interfaces;
-using finance_management.Mapping;
-using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Repository;
 using finance_management.Services;
@@ -14,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
 using System.Reflection;
+using System.Text.Json.Serialization;
 
 
 Env.Load();
@@ -30,7 +29,11 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
         options.SerializerSettings.Converters.Add(new StringEnumConverter());
-    });
+    })
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    }); ;
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 var connectionString = Environment.GetEnvironmentVariable("PFM_DB")

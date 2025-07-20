@@ -20,10 +20,9 @@ namespace finance_management.Queries.GetTransactions
             var query = _db.Transactions.AsQueryable();
 
             // Filter by transaction kind
-            if (!string.IsNullOrEmpty(request.TransactionKind) &&
-            Enum.TryParse<TransactionKindEnum>(request.TransactionKind, true, out var parsedKind))
+            if (request.TransactionKind.HasValue)
             {
-                query = query.Where(t => t.Kind == parsedKind);
+                query = query.Where(t => t.Kind == request.TransactionKind.Value);
             }
 
             // Filter by date range, convert to UTC

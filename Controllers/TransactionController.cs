@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 using System.Formats.Asn1;
 using System.Globalization;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
@@ -44,28 +45,41 @@ namespace finance_management.Controllers
             _mediator = mediator;
         }
 
-        
+
         [HttpGet]
-        public async Task<IActionResult> GetAllTransactions(
-            [FromQuery] string? transactionKind = null,
-            [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string sortOrder = "asc")
+        public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQueryDTO queryDto)
         {
+            
+            var validationResults = new List<ValidationResult>();
+            var validationContext = new ValidationContext(queryDto);
+
+            if (!Validator.TryValidateObject(queryDto, validationContext, validationResults, true))
+            {
+                foreach (var error in validationResults)
+                {
+                    foreach (var memberName in error.MemberNames)
+                    {
+                        ModelState.AddModelError(memberName, error.ErrorMessage);
+                    }
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
                 var query = new GetTransactionsQuery
                 {
-                    TransactionKind = transactionKind,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    Page = page,
-                    PageSize = pageSize,
-                    SortBy = sortBy,
-                    SortOrder = sortOrder
+                    TransactionKind = queryDto.TransactionKind,
+                    StartDate = queryDto.StartDate,
+                    EndDate = queryDto.EndDate,
+                    Page = queryDto.Page,
+                    PageSize = queryDto.PageSize,
+                    SortBy = queryDto.SortBy,
+                    SortOrder = queryDto.SortOrder
                 };
 
                 var result = await _mediator.Send(query);

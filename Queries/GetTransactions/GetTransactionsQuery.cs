@@ -1,11 +1,12 @@
 ﻿using finance_management.Models;
+using finance_management.Models.Enums;
 using MediatR;
 
 namespace finance_management.Queries.GetTransactions
 {
     public class GetTransactionsQuery : IRequest<List<Transaction>>
     {
-        public string? TransactionKind { get; set; }
+        public TransactionKindEnum? TransactionKind { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public int Page { get; set; } = 1;
