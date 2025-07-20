@@ -4,6 +4,7 @@ using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Mapping;
+using finance_management.Models;
 using finance_management.Repository;
 using finance_management.Services;
 using FluentValidation;
@@ -38,22 +39,20 @@ var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
 builder.Services.AddDbContext<PfmDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
-builder.Services.AddScoped<ITransactionService, TransactionService>();
-
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddControllers(options =>
 {
-    c.OperationFilter<SwaggerFileOperationFilter>();
-    
+    options.InputFormatters.Insert(0, new TextPlainInputFormatter());
 });
-builder.Services.AddScoped<CsvTransactionImporter>();
-builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddSwaggerGen();
 builder.Services.AddValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
-builder.Services.AddScoped<ITransactionImportService, TransactionImportService>();
 
 var app = builder.Build();
 

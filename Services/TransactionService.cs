@@ -1,6 +1,7 @@
 ﻿using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Models;
+using finance_management.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace finance_management.Services
@@ -30,9 +31,10 @@ namespace finance_management.Services
             var query = _repo.Query();
 
             // Filter by transaction kind
-            if (!string.IsNullOrEmpty(transactionKind))
+            if (!string.IsNullOrEmpty(transactionKind) &&
+            Enum.TryParse<TransactionKindEnum>(transactionKind, ignoreCase: true, out var parsedKind))
             {
-                query = query.Where(t => t.Kind == transactionKind);
+                query = query.Where(t => t.Kind == parsedKind);
             }
 
             // Filter by date range

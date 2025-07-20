@@ -24,7 +24,8 @@ namespace finance_management.Database
                 entity.Property(e => e.Amount);
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.Currency).HasMaxLength(3);
-                entity.Property(e => e.Kind).HasMaxLength(50);
+                entity.Property(e => e.Kind).HasConversion<string>();
+                entity.Property(e => e.Direction).HasConversion<string>();
 
                 entity.HasIndex(e => e.Date);
                 entity.HasIndex(e => e.Direction);
