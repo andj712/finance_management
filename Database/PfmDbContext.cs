@@ -18,17 +18,15 @@ namespace finance_management.Database
             modelBuilder.Entity<Transaction>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.BeneficiaryName).HasMaxLength(30);
-                entity.Property(e => e.Direction).HasMaxLength(1);
-                entity.Property(e => e.Amount);
-                entity.Property(e => e.Description).HasMaxLength(30);
+                entity.Property(e => e.Id).HasMaxLength(15);
                 entity.Property(e => e.Currency).HasMaxLength(3);
-                entity.Property(e => e.Kind).HasConversion<string>();
-                entity.Property(e => e.Direction).HasConversion<string>();
-
-                entity.HasIndex(e => e.Date);
-                entity.HasIndex(e => e.Direction);
+                entity.Property(e => e.BeneficiaryName).HasMaxLength(30);
+                entity.Property(e => e.Description).HasMaxLength(30);
+                entity.Property(e => e.Amount).HasPrecision(18, 2);
+                entity.Property(e => e.Direction)
+                  .HasConversion<string>();
+                entity.Property(e => e.Kind)
+                    .HasConversion<string>();
             });
         }
 

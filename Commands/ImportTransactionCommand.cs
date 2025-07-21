@@ -1,9 +1,15 @@
-﻿using MediatR;
+﻿using finance_management.DTOs.ImportTransaction;
+using MediatR;
 
 namespace finance_management.Commands
 {
-    public class ImportTransactionsCommand : IRequest
+    public class ImportTransactionsCommand : IRequest<ImportTransactionsResult>
     {
-        public string CsvContent { get; set; } = string.Empty;
+        public IFormFile CsvFile { get; set; }
+
+        public ImportTransactionsCommand(IFormFile csvFile)
+        {
+            CsvFile = csvFile;
+        }
     }
 }

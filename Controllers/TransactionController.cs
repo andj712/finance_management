@@ -4,6 +4,7 @@ using CsvHelper.Configuration;
 using finance_management.Commands;
 using finance_management.Database;
 using finance_management.DTOs;
+using finance_management.DTOs.ImportTransaction;
 using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Models;
@@ -22,7 +23,7 @@ using System.Formats.Asn1;
 using System.Globalization;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using Errors = finance_management.Validations.Errors.Errors;
+using Errors = finance_management.Validations.Errors.ValidationError;
 
 
 namespace finance_management.Controllers
@@ -92,12 +93,63 @@ namespace finance_management.Controllers
         }
 
         [HttpPost("import")]
-        [Consumes("application/csv")]
-        public async Task<IActionResult> ImportCsv([FromBody] string csv)
+        public async Task<IActionResult> ImportTransactions(IFormFile file)
         {
-            await _mediator.Send(new ImportTransactionsCommand { CsvContent = csv });
-            return Ok();
+            if (file == null)
+            {
+                return BadRequest(new ValidationResponse
+                {
+                    Errors = new List<ValidationError>
+                    {
+                        new ValidationError
+                        {
+                            Tag = "file",
+                            Error = ErrorEnum.Required.ToString(),
+                            Message = "CSV file is required"
+                        }
+                    }
+                });
+            }
+
+            var command = new ImportTransactionsCommand(file);
+            var result = await _mediator.Send(command);
+
+            if (result.ValidationErrors.Any() && result.ImportedCount == 0)
+            {
+                return BadRequest(new ValidationResponse
+                {
+                    Errors = result.ValidationErrors
+                });
+            }
+
+            //return Ok(new
+            //{
+            //    message = "Import completed",
+            //    processedCount = result.ProcessedCount,
+            //    importedCount = result.ImportedCount,
+            //    skippedCount = result.SkippedCount,
+            //    logFileName = result.LogFileName,
+            //    errors = result.ValidationErrors
+            //});
+            //da ne bi vracao error i logfile ako je prazna lista gresaka koristila sam dictionary
+            var response = new Dictionary<string, object>
+            {
+                ["message"] = "Import completed",
+                ["processedCount"] = result.ProcessedCount,
+                ["importedCount"] = result.ImportedCount,
+                ["skippedCount"] = result.SkippedCount,
+            };
+
+            if (result.ValidationErrors != null && result.ValidationErrors.Any())
+            {
+                response["logFileName"] = result.LogFileName;
+                response["errors"] = result.ValidationErrors;
+            }
+
+            return Ok(response);
         }
+    
+
 
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(object), 400)]
@@ -137,7 +189,7 @@ namespace finance_management.Controllers
                 Amount = request.SplitAmount,
                 Description = request.NewDescription ?? original.Description,
                 Currency = original.Currency,
-                MccCode = original.MccCode,
+                MccCode= original.MccCode,
                 Kind = original.Kind
             };
 

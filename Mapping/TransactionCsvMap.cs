@@ -1,7 +1,7 @@
 ﻿using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 using finance_management.Commands;
-using finance_management.DTOs;
+using finance_management.DTOs.ImportTransaction;
 using finance_management.Models;
 using finance_management.Models.Enums;
 using finance_management.Models.Enums;

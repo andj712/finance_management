@@ -1,80 +1,142 @@
 ﻿using CsvHelper;
 using finance_management.Database;
-using finance_management.DTOs;
+using finance_management.DTOs.ImportTransaction;
+using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Models.Enums;
+using finance_management.Services;
+using finance_management.Validations.Errors;
 using MediatR;
 using System.Globalization;
 
 namespace finance_management.Commands
 {
-    public class ImportTransactionsCommandHandler : IRequestHandler<ImportTransactionsCommand>
+    public class ImportTransactionsCommandHandler : IRequestHandler<ImportTransactionsCommand, ImportTransactionsResult>
     {
-        private readonly PfmDbContext _context;
+        private readonly ITransactionRepository _repository;
+        private readonly CsvProcessingService _csvProcessingService;
+        private readonly CsvValidationService _csvValidationService;
+        private readonly ErrorLoggingService _errorLoggingService;
 
-        public ImportTransactionsCommandHandler(PfmDbContext context)
+        public ImportTransactionsCommandHandler(
+            ITransactionRepository repository,
+            CsvProcessingService csvProcessingService,
+            CsvValidationService csvValidationService,
+            ErrorLoggingService errorLoggingService)
         {
-            _context = context;
+            _repository = repository;
+            _csvProcessingService = csvProcessingService;
+            _csvValidationService = csvValidationService;
+            _errorLoggingService = errorLoggingService;
         }
 
-        public async Task<Unit> Handle(ImportTransactionsCommand request, CancellationToken cancellationToken)
+        public async Task<ImportTransactionsResult> Handle(ImportTransactionsCommand request, CancellationToken cancellationToken)
         {
-            using var reader = new StringReader(request.CsvContent);
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            var result = new ImportTransactionsResult();
+            var allErrors = new List<ValidationError>();
+            var skippedRows = new List<string>();
 
-            csv.Context.RegisterClassMap<TransactionCsvMap>();
-            var records = csv.GetRecords<TransactionCsvDto>();
-
-            foreach (var record in records)
+            // validacija fajla
+            if (request.CsvFile == null || request.CsvFile.Length == 0)
             {
-                // Validate required fields
-                if (string.IsNullOrWhiteSpace(record.Id) ||
-                    string.IsNullOrWhiteSpace(record.Date) ||
-                    string.IsNullOrWhiteSpace(record.Direction) ||
-                    string.IsNullOrWhiteSpace(record.Amount) ||
-                    string.IsNullOrWhiteSpace(record.Currency) ||
-                    string.IsNullOrWhiteSpace(record.Kind))
-                    continue; // skip invalid row
-
-                if (!Enum.TryParse<DirectionEnum>(record.Direction, true, out var directionEnum))
-                    continue;
-                if (!Enum.TryParse<TransactionKindEnum>(record.Kind, true, out var kindEnum))
-                    continue;
-                if (!DateTime.TryParse(record.Date, out var date))
-                    continue;
-
-                date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
-                if (!decimal.TryParse(record.Amount, out var amount))
-                    continue;
-
-                MccCodeEnum? mccEnum = null;
-                if (!string.IsNullOrWhiteSpace(record.Mcc) && int.TryParse(record.Mcc, out var mccCode))
-                    mccEnum = Enum.IsDefined(typeof(MccCodeEnum), mccCode) ? (MccCodeEnum?)mccCode : null;
-
-                var transaction = new Transaction
+                result.ValidationErrors.Add(new ValidationError
                 {
-                    Id = record.Id,
-                    BeneficiaryName = string.IsNullOrWhiteSpace(record.BeneficiaryName) ? null : record.BeneficiaryName,
-                    Date = date,
-                    Direction = directionEnum,
-                    Amount = amount,
-                    Description = string.IsNullOrWhiteSpace(record.Description) ? null : record.Description,
-                    Currency = record.Currency,
-                    MccCode = mccEnum,
-                    Kind = kindEnum
-                };
-
-                _context.Transactions.Add(transaction);
+                    Tag = "file",
+                    Error = "required",
+                    Message = "CSV file is required"
+                });
+                return result;
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
-            return Unit.Value;
-        }
+            if (!request.CsvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                result.ValidationErrors.Add(new ValidationError
+                {
+                    Tag = "file",
+                    Error = "invalid-format",
+                    Message = "File must be a CSV file"
+                });
+                return result;
+            }
 
-        Task IRequestHandler<ImportTransactionsCommand>.Handle(ImportTransactionsCommand request, CancellationToken cancellationToken)
-        {
-            return Handle(request, cancellationToken);
+            try
+            {
+                using var stream = request.CsvFile.OpenReadStream();
+                var (records, headers) = await _csvProcessingService.ParseCsvAsync(stream);
+
+                // validacija zaglavlja
+                var headerErrors = _csvValidationService.ValidateHeaders(headers);
+                if (headerErrors.Any())
+                {
+                    result.ValidationErrors.AddRange(headerErrors);
+                    return result;
+                }
+
+                var validTransactions = new List<Transaction>();
+                var rowNumber = 1;
+
+                foreach (var csvDto in records)
+                {
+                    rowNumber++;
+                    result.ProcessedCount++;
+
+                    var (transaction, rowErrors) = _csvValidationService.ValidateAndMapRow(csvDto, rowNumber);
+
+                    if (rowErrors.Any())
+                    {
+                        allErrors.AddRange(rowErrors);
+                        skippedRows.Add($"Row {rowNumber}: {string.Join(", ", rowErrors.Select(e => e.Message))}");
+                        result.SkippedCount++;
+                        continue;
+                    }
+
+                    if (transaction != null)
+                    {
+                        // provera da li vec postoji transakcija sa istim id-om
+                        if (await _repository.ExistsAsync(transaction.Id))
+                        {
+                            allErrors.Add(new ValidationError
+                            {
+                                Tag = $"id-row-{rowNumber}",
+                                Error = "duplicate",
+                                Message = $"Transaction with ID {transaction.Id} already exists"
+                            });
+                            skippedRows.Add($"Row {rowNumber}: Duplicate transaction ID {transaction.Id}");
+                            result.SkippedCount++;
+                            continue;
+                        }
+
+                        validTransactions.Add(transaction);
+                    }
+                }
+
+                // import validnih transakcija
+                if (validTransactions.Any())
+                {
+                    await _repository.CreateBulkAsync(validTransactions);
+                    result.ImportedCount = validTransactions.Count;
+                }
+
+                // logovanje gresaka
+                if (allErrors.Any() || skippedRows.Any())
+                {
+                    result.LogFileName = await _errorLoggingService.LogErrorsAsync(allErrors, skippedRows);
+                }
+
+                result.ValidationErrors = allErrors;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.ValidationErrors.Add(new ValidationError
+                {
+                    Tag = "processing",
+                    Error = "internal-error",
+                    Message = $"Error processing CSV file: {ex.Message}"
+                });
+                return result;
+            }
         }
     }
 }

@@ -55,7 +55,9 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-
+builder.Services.AddScoped<CsvProcessingService>();
+builder.Services.AddScoped<CsvValidationService>();
+builder.Services.AddScoped<ErrorLoggingService>();
 
 var app = builder.Build();
 
