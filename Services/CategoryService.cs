@@ -7,6 +7,7 @@ using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
 namespace finance_management.Services
@@ -28,6 +29,9 @@ namespace finance_management.Services
                 throw new ArgumentException("File is empty or null");
 
             var categories = new List<CategoryDto>();
+            var duplicateCodesInFile = new List<string>();
+            var updatedCodes = new List<string>();
+
 
             using var reader = new StringReader(await ReadFileAsync(file));
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -40,50 +44,82 @@ namespace finance_management.Services
             //custom mapiranje 
             csv.Context.RegisterClassMap<CategoryCsvMap>();
             var records = csv.GetRecords<CategoryDto>().ToList();
-
+            
+            var processedCodes = new HashSet<string>();
+            var finalRecords = new List<CategoryDto>();
             // validacija prvo
             ValidateCategories(records);
 
-            // provera duplikata
-            var duplicatesInFile = records.GroupBy(r => r.Code)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
+
+            //  ukloni duplikate u fajlu zadrzi poslednji, loguj samo ako se razlikuju
+            var grouped = records
+                .GroupBy(r => r.Code)
                 .ToList();
 
-            if (duplicatesInFile.Any())
+            var uniqueRecords = new List<CategoryDto>();
+
+            foreach (var group in grouped)
             {
-                throw new BusinessException(new BusinessError
+                var entries = group.ToList();
+
+                if (entries.Count > 1)
                 {
-                    Problem = "duplicate-categories",
-                    Message = "Duplicate categories found in file",
-                    Details = $"Categories with codes: {string.Join(", ", duplicatesInFile)} appear multiple times in the file"
-                });
+                    var distinct = entries
+                        .Select(e => new { e.Name, e.ParentCode })
+                        .Distinct()
+                        .ToList();
+
+                    if (distinct.Count > 1)
+                    {
+                        duplicateCodesInFile.Add(group.Key); // samo ako se razlikuju
+                    }
+                }
+
+                uniqueRecords.Add(entries.Last()); // zadrzi poslednji
             }
 
-            // procesiranje kategorija
-            foreach (var categoryDto in records)
-            {
-                var existingCategory = await _categoryRepository.GetByCodeAsync(categoryDto.Code);
-                var category = _mapper.Map<Category>(categoryDto);
+            // ucitaj postojece kodove i entitete iz baze
+            var allExistingCategories = await _categoryRepository.GetAllAsync();
+            var existingByCode = allExistingCategories.ToDictionary(c => c.Code);
 
-                if (existingCategory != null)
+            // procesiraj svaku kategoriju
+            foreach (var dto in uniqueRecords)
+            {
+                var category = _mapper.Map<Category>(dto);
+
+                if (existingByCode.TryGetValue(dto.Code, out var existingCategory))
                 {
-                    //azuriranje postojece kategorije
+                    // Ako su svi podaci isti preskoci
+                    if (existingCategory.Name == dto.Name && existingCategory.ParentCode == dto.ParentCode)
+                    {
+                        continue;
+                    }
+
+                    //U suprotnom azuriraj
                     existingCategory.Name = category.Name;
                     existingCategory.ParentCode = category.ParentCode;
+
                     await _categoryRepository.UpdateAsync(existingCategory);
                     categories.Add(_mapper.Map<CategoryDto>(existingCategory));
-
+                    updatedCodes.Add(dto.Code);
                 }
                 else
                 {
-                    // dodavanje nove kategorije
+                    // nova kategorija
                     var newCategory = await _categoryRepository.AddAsync(category);
                     categories.Add(_mapper.Map<CategoryDto>(newCategory));
                 }
             }
 
+            // loguj promene duplikati u fajlu i azuriranja postojecih
+            var loggingService = new CategoryErrorLoggingService();
+            await loggingService.LogCategoryErrorsAsync(
+                new List<ValidationError>(),
+                duplicateCodesInFile.Concat(updatedCodes).Distinct().ToList()
+            );
+
             return categories;
+
         }
 
         public async Task<CategoryDto?> GetCategoryAsync(string code)

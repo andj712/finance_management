@@ -43,10 +43,7 @@ var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
 builder.Services.AddDbContext<PfmDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
-builder.Services.AddControllers(options =>
-{
-    options.InputFormatters.Insert(0, new TextPlainInputFormatter());
-});
+
 
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddSwaggerGen();
