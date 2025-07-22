@@ -10,6 +10,7 @@ using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -55,7 +56,8 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-builder.Services.AddScoped<CsvProcessingService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>(); builder.Services.AddScoped<CsvProcessingService>();
 builder.Services.AddScoped<CsvValidationService>();
 builder.Services.AddScoped<ErrorLoggingService>();
 
