@@ -124,9 +124,9 @@ namespace finance_management.Services
             if (!string.IsNullOrWhiteSpace(csvDto.Description))
             {
                 var description = csvDto.Description.Trim();
-                if (description.Length > 30)
+                if (description.Length > 50)
                 {
-                    errors.Add(CreateError("description", "max-length", "Description exceeds maximum allowed length of 30 characters", rowNumber));
+                    errors.Add(CreateError("description", "max-length", "Description exceeds maximum allowed length of 50 characters", rowNumber));
                 }
                 else
                 {
