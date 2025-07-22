@@ -14,7 +14,7 @@ namespace finance_management.Services
                 Directory.CreateDirectory(_logDirectory);
             }
 
-            var fileName = $"import-errors-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+            var fileName = $"import-transaction-errors-{DateTime.Now:yyyyMMdd-HHmmss}.json";
             var filePath = Path.Combine(_logDirectory, fileName);
 
             var logData = new
