@@ -48,11 +48,11 @@ namespace finance_management.Services
             var processedCodes = new HashSet<string>();
             var finalRecords = new List<CategoryDto>();
             // validacija prvo
-            ValidateCategories(records);
+            var (validRecords, validationErrors) = ValidateCategories(records);
 
 
             //  ukloni duplikate u fajlu zadrzi poslednji, loguj samo ako se razlikuju
-            var grouped = records
+            var grouped = validRecords
                 .GroupBy(r => r.Code)
                 .ToList();
 
@@ -114,7 +114,7 @@ namespace finance_management.Services
             // loguj promene duplikati u fajlu i azuriranja postojecih
             var loggingService = new CategoryErrorLoggingService();
             await loggingService.LogCategoryErrorsAsync(
-                new List<ValidationError>(),
+                validationErrors,
                 duplicateCodesInFile.Concat(updatedCodes).Distinct().ToList()
             );
 
@@ -134,13 +134,15 @@ namespace finance_management.Services
             return _mapper.Map<List<CategoryDto>>(categories);
         }
 
-        private void ValidateCategories(List<CategoryDto> categories)
+        private (List<CategoryDto> ValidRecords, List<ValidationError> Errors) ValidateCategories(List<CategoryDto> categories)
         {
             var errors = new List<ValidationError>();
+            var validRecords = new List<CategoryDto>();
 
             for (int i = 0; i < categories.Count; i++)
             {
                 var category = categories[i];
+                var hasError = false;
 
                 if (string.IsNullOrWhiteSpace(category.Code))
                 {
@@ -150,6 +152,7 @@ namespace finance_management.Services
                         Error = "required",
                         Message = "Code is required"
                     });
+                    hasError = true;
                 }
 
                 if (string.IsNullOrWhiteSpace(category.Name))
@@ -160,13 +163,16 @@ namespace finance_management.Services
                         Error = "required",
                         Message = "Name is required"
                     });
+                    hasError = true;
+                }
+
+                if (!hasError)
+                {
+                    validRecords.Add(category);
                 }
             }
 
-            if (errors.Any())
-            {
-                throw new Validations.Exceptions.ValidationException(errors);
-            }
+            return (validRecords, errors);
         }
 
         private async Task<string> ReadFileAsync(IFormFile file)
