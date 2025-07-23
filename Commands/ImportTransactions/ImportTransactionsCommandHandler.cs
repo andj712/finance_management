@@ -7,10 +7,11 @@ using finance_management.Models;
 using finance_management.Models.Enums;
 using finance_management.Services;
 using finance_management.Validations.Errors;
+using finance_management.Validations.Log;
 using MediatR;
 using System.Globalization;
 
-namespace finance_management.Commands
+namespace finance_management.Commands.ImportTransactions
 {
     public class ImportTransactionsCommandHandler : IRequestHandler<ImportTransactionsCommand, ImportTransactionsResult>
     {

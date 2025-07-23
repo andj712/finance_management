@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using CsvHelper;
 using CsvHelper.Configuration;
-using finance_management.Commands;
+using finance_management.Commands.CategorizeSingleTransaction;
+using finance_management.Commands.ImportTransactions;
 using finance_management.Database;
 using finance_management.DTOs;
+using finance_management.DTOs.CategorizeTransaction;
 using finance_management.DTOs.ImportTransaction;
 using finance_management.Interfaces;
 using finance_management.Mapping;
@@ -21,6 +23,7 @@ using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Formats.Asn1;
 using System.Globalization;
+using System.Net.WebSockets;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Errors = finance_management.Validations.Errors.ValidationError;
@@ -33,17 +36,18 @@ namespace finance_management.Controllers
     public class TransactionController : ControllerBase
     {
         private readonly PfmDbContext _db;
-        private readonly IMapper _mapper;
-
+        private readonly ILogger<TransactionController> _logger;
+        private readonly CategorizeTransactionCommandHandler _categorizeHandler;
         private readonly ITransactionService _transactionService;
         private readonly IMediator _mediator;
 
-        public TransactionController(PfmDbContext db,IMapper mapper, ITransactionService transactionService,IMediator mediator)
+        public TransactionController(PfmDbContext db, ITransactionService transactionService,IMediator mediator, ILogger<TransactionController> logger, CategorizeTransactionCommandHandler categorizeHandler)
         {
             _db = db;
-            _mapper= mapper;
             _transactionService = transactionService;
             _mediator = mediator;
+            _categorizeHandler = categorizeHandler;
+            _logger = logger;
         }
 
 
@@ -148,7 +152,36 @@ namespace finance_management.Controllers
 
             return Ok(response);
         }
-    
+
+        [HttpPost("{id}/categorize")]
+        public async Task<IActionResult> CategorizeTransaction([FromRoute] string id, [FromBody] CategorizeTransactionRequest request)
+        {
+            var command = new CategorizeTransactionCommand
+            {
+                TransactionId = id,
+                CatCode = request.CatCode
+            };
+
+            var result = await _categorizeHandler.HandleAsync(command);
+
+            if (result.ValidationErrors.Any())
+            {
+                return BadRequest(new ValidationResponse
+                {
+                    Errors = result.ValidationErrors
+                });
+            }
+
+            if (result.BusinessError != null)
+            {
+                return StatusCode(440, result.BusinessError);
+            }
+
+            return Ok(new
+            {
+                message = "Transaction categorized successfully"
+            });
+        }
 
 
         [ProducesResponseType(typeof(void), 200)]

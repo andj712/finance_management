@@ -1,10 +1,12 @@
 using AutoMapper;
 using DotNetEnv;
+using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Models;
 using finance_management.Repository;
 using finance_management.Services;
+using finance_management.Validations.Log;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
@@ -57,6 +59,9 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>(); builder.Services.AddScoped<CsvProcessingService>();
 builder.Services.AddScoped<CsvValidationService>();
 builder.Services.AddScoped<ErrorLoggingService>();
+builder.Services.AddScoped<CategorizeTransactionCommandHandler>();
+builder.Services.AddScoped<CategoryErrorLoggingService>();
+
 
 var app = builder.Build();
 

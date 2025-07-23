@@ -2,7 +2,7 @@
 using finance_management.Interfaces;
 using MediatR;
 
-namespace finance_management.Commands
+namespace finance_management.Commands.ImportCategories
 {
     public class ImportCategoriesCommandHandler : IRequestHandler<ImportCategoriesCommand, List<CategoryDto>>
     {

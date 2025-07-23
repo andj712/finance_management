@@ -1,4 +1,5 @@
 ﻿using finance_management.Commands;
+using finance_management.Commands.ImportCategories;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using MediatR;
@@ -20,7 +21,7 @@ namespace finance_management.Controllers
 
         [HttpPost("import")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> ImportCategories( IFormFile file)
+        public async Task<IActionResult> ImportCategories(IFormFile file)
         {
             try
             {

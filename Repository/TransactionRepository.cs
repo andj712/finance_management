@@ -21,7 +21,8 @@ namespace finance_management.Repository
 
         public async Task<Transaction?> GetByIdAsync(string id)
         {
-            return await _context.Transactions.FindAsync(id);
+            return await _context.Transactions
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<Transaction> CreateAsync(Transaction transaction)
@@ -67,6 +68,15 @@ namespace finance_management.Repository
         public IQueryable<Transaction> Query()
         {
             return _context.Transactions.AsQueryable();
+        }
+        public async Task UpdateCategoryAsync(string transactionId, string catCode)
+        {
+            var transaction = await _context.Transactions.FindAsync(transactionId);
+            if (transaction != null)
+            {
+                transaction.CatCode = catCode;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

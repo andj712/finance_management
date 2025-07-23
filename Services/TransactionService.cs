@@ -2,7 +2,9 @@
 using finance_management.Interfaces;
 using finance_management.Models;
 using finance_management.Models.Enums;
+using finance_management.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace finance_management.Services
 {
@@ -12,11 +14,12 @@ namespace finance_management.Services
     {
         private readonly ITransactionRepository _repo;
         private readonly IUnitOfWork _unitOfWork;
-
-        public TransactionService(ITransactionRepository repo, IUnitOfWork unitOfWork)
+        private readonly ILogger<TransactionService> _logger;
+        public TransactionService(ITransactionRepository repo, IUnitOfWork unitOfWork, ILogger<TransactionService> logger)
         {
             _repo = repo;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<List<Transaction>> GetAllTransactionsAsync(
@@ -91,6 +94,15 @@ namespace finance_management.Services
             return await query.ToListAsync();
         }
 
-        
+        public async Task<Transaction?> GetByIdAsync(string id)
+        {
+            return await _repo.GetByIdAsync(id);
+        }
+
+        public async Task UpdateCategoryAsync(string transactionId, string catCode)
+        {
+            await _repo.UpdateCategoryAsync(transactionId, catCode);
+        }
     }
+
 }

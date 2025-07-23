@@ -1,4 +1,5 @@
 ﻿using finance_management.DTOs.ImportCategory;
+using finance_management.Models;
 
 namespace finance_management.Interfaces
 {
@@ -7,5 +8,9 @@ namespace finance_management.Interfaces
         Task<List<CategoryDto>> ImportCategoriesAsync(IFormFile file);
         Task<CategoryDto?> GetCategoryAsync(string code);
         Task<List<CategoryDto>> GetAllCategoriesAsync();
+        
+        Task<Category?> GetByCodeAsync(string code);
+       
+
     }
 }

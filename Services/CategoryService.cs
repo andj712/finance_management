@@ -7,7 +7,9 @@ using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
+using finance_management.Validations.Log;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Globalization;
 
 namespace finance_management.Services
@@ -16,11 +18,14 @@ namespace finance_management.Services
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<CategoryService> _logger;
 
-        public CategoryService(ICategoryRepository categoryRepository, IMapper mapper)
+        public CategoryService(ICategoryRepository categoryRepository, IMapper mapper, ILogger<CategoryService> logger)
         {
             _categoryRepository = categoryRepository;
             _mapper = mapper;
+            _logger = logger;
+
         }
 
         public async Task<List<CategoryDto>> ImportCategoriesAsync(IFormFile file)
@@ -180,6 +185,11 @@ namespace finance_management.Services
             using var stream = file.OpenReadStream();
             using var reader = new StreamReader(stream);
             return await reader.ReadToEndAsync();
+        }
+
+        public async Task<Category?> GetByCodeAsync(string code)
+        {
+            return await _categoryRepository.GetByCodeAsync(code);
         }
     }
 }

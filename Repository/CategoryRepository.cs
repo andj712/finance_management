@@ -17,8 +17,6 @@ namespace finance_management.Repository
         public async Task<Category?> GetByCodeAsync(string code)
         {
             return await _context.Categories
-                .Include(c => c.ParentCategory)
-                .Include(c => c.ChildCategories)
                 .FirstOrDefaultAsync(c => c.Code == code);
         }
 
