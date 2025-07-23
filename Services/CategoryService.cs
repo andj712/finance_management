@@ -193,9 +193,9 @@ namespace finance_management.Services
             return await _categoryRepository.GetByCodeAsync(code);
         }
 
-        public SpendingAnalytics GetSpendingAnalyticsByCategory(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
+        public async Task<SpendingAnalytics> GetSpendingAnalyticsByCategory(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
         {
-            return _categoryRepository.GetSpendingAnalytics(catCode, startDate, endDate, direction);
+            return await _categoryRepository.GetSpendingAnalyticsAsync(catCode, startDate, endDate, direction);
         }
     }
 }

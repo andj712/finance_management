@@ -4,6 +4,7 @@ using finance_management.Models.Enums;
 using finance_management.Validations.Errors;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
 
 namespace finance_management.Controllers
@@ -24,12 +25,12 @@ namespace finance_management.Controllers
         }
 
         [HttpGet]
-        public IActionResult ViewSpendingAnalyticsByCategory([FromQuery] string catCode,
+        public async Task<IActionResult> ViewSpendingAnalyticsByCategory([FromQuery(Name = "catcode")] string catCode,
            [FromQuery(Name = "start-date")] DateTime? startDate,
            [FromQuery(Name = "end-date")] DateTime? endDate, [FromQuery] DirectionEnum? direction)
         {
             
-            var result= _categoriesService.GetSpendingAnalyticsByCategory(catCode, startDate, endDate, direction);
+            var result= await _categoriesService.GetSpendingAnalyticsByCategory(catCode, startDate, endDate, direction);
 
             
             return Ok(JsonConvert.SerializeObject(result, Formatting.Indented));
