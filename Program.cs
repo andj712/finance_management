@@ -63,6 +63,7 @@ builder.Services.AddScoped<CategorizeTransactionCommandHandler>();
 builder.Services.AddScoped<CategoryErrorLoggingService>();
 
 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

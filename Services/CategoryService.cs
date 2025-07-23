@@ -5,6 +5,7 @@ using finance_management.DTOs.ImportCategory;
 using finance_management.Interfaces;
 using finance_management.Mapping;
 using finance_management.Models;
+using finance_management.Models.Enums;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using finance_management.Validations.Log;
@@ -190,6 +191,11 @@ namespace finance_management.Services
         public async Task<Category?> GetByCodeAsync(string code)
         {
             return await _categoryRepository.GetByCodeAsync(code);
+        }
+
+        public SpendingAnalytics GetSpendingAnalyticsByCategory(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
+        {
+            return _categoryRepository.GetSpendingAnalytics(catCode, startDate, endDate, direction);
         }
     }
 }

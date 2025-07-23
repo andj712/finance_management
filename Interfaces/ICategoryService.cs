@@ -1,5 +1,6 @@
 ﻿using finance_management.DTOs.ImportCategory;
 using finance_management.Models;
+using finance_management.Models.Enums;
 
 namespace finance_management.Interfaces
 {
@@ -10,7 +11,6 @@ namespace finance_management.Interfaces
         Task<List<CategoryDto>> GetAllCategoriesAsync();
         
         Task<Category?> GetByCodeAsync(string code);
-       
-
+        SpendingAnalytics GetSpendingAnalyticsByCategory(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction);
     }
 }

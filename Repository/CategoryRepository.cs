@@ -1,6 +1,7 @@
 ﻿using finance_management.Database;
 using finance_management.Interfaces;
 using finance_management.Models;
+using finance_management.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace finance_management.Repository
@@ -57,6 +58,11 @@ namespace finance_management.Repository
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public SpendingAnalytics GetSpendingAnalytics(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
+        {
+            throw new NotImplementedException();
         }
     }
 }

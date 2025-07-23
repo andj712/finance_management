@@ -1,4 +1,5 @@
 ﻿using finance_management.Models;
+using finance_management.Models.Enums;
 
 namespace finance_management.Interfaces
 {
@@ -11,5 +12,6 @@ namespace finance_management.Interfaces
         Task<bool> ExistsAsync(string code);
         Task<IEnumerable<Category>> GetByCodesAsync(IEnumerable<string> codes);
         Task SaveChangesAsync();
+        SpendingAnalytics GetSpendingAnalytics(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction);
     }
 }
