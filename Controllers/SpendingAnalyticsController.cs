@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using finance_management.Interfaces;
 using finance_management.Models.Enums;
+using finance_management.Queries.GetSpendingAnalytics;
 using finance_management.Validations.Errors;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -15,13 +16,15 @@ namespace finance_management.Controllers
     {
         private readonly ILogger<AnalyticsController> _logger;
         private readonly ICategoryService _categoriesService;
-    
+        private readonly IMediator _mediator;
         public AnalyticsController(
             ILogger<AnalyticsController> logger,
-            ICategoryService categoriesService)
+            ICategoryService categoriesService,
+            IMediator mediator)
         {
             _logger = logger;
             _categoriesService = categoriesService;
+            _mediator = mediator;
         }
 
         [HttpGet]
@@ -29,11 +32,18 @@ namespace finance_management.Controllers
            [FromQuery(Name = "start-date")] DateTime? startDate,
            [FromQuery(Name = "end-date")] DateTime? endDate, [FromQuery] DirectionEnum? direction)
         {
-            
-            var result= await _categoriesService.GetSpendingAnalyticsByCategory(catCode, startDate, endDate, direction);
 
-            
-            return Ok(JsonConvert.SerializeObject(result, Formatting.Indented));
+            var query = new GetSpendingAnalyticsQuery
+            {
+                CatCode = catCode,
+                StartDate = startDate,
+                EndDate = endDate,
+                Direction = direction
+            };
+
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
 
 

@@ -13,5 +13,6 @@ namespace finance_management.Interfaces
         Task<IEnumerable<Category>> GetByCodesAsync(IEnumerable<string> codes);
         Task SaveChangesAsync();
         Task<SpendingAnalytics> GetSpendingAnalyticsAsync(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction);
+
     }
 }
