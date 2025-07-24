@@ -61,6 +61,7 @@ builder.Services.AddScoped<CsvValidationService>();
 builder.Services.AddScoped<ErrorLoggingService>();
 builder.Services.AddScoped<CategorizeTransactionCommandHandler>();
 builder.Services.AddScoped<CategoryErrorLoggingService>();
+builder.Services.AddScoped<SpendingAnalyticsErrorLoggingService>();
 
 
 

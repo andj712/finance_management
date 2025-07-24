@@ -4,6 +4,7 @@ using finance_management.Models.Enums;
 using finance_management.Queries.GetSpendingAnalytics;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
+using finance_management.Validations.Log;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Office.Interop.Excel;
@@ -15,17 +16,15 @@ namespace finance_management.Controllers
     [Route("spending-analytics")]
     public class AnalyticsController : ControllerBase
     {
-        private readonly ILogger<AnalyticsController> _logger;
-        private readonly ICategoryService _categoriesService;
+        private readonly SpendingAnalyticsErrorLoggingService _errorLogger;
         private readonly IMediator _mediator;
         public AnalyticsController(
-            ILogger<AnalyticsController> logger,
-            ICategoryService categoriesService,
-            IMediator mediator)
+           
+            IMediator mediator, SpendingAnalyticsErrorLoggingService errorLogger)
         {
-            _logger = logger;
-            _categoriesService = categoriesService;
+            
             _mediator = mediator;
+            _errorLogger = errorLogger;
         }
 
         [HttpGet]
@@ -49,7 +48,9 @@ namespace finance_management.Controllers
             }
             catch (ValidationException ex)
             {
-          
+                //logovanje
+                var fileName = await _errorLogger.LogValidationErrorsAsync(ex.Errors);
+
                 var response = new ValidationResponse
                 {
                     Errors = ex.Errors
