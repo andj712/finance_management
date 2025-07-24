@@ -19,13 +19,11 @@ namespace finance_management.Services
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly IMapper _mapper;
-        private readonly ILogger<CategoryService> _logger;
 
-        public CategoryService(ICategoryRepository categoryRepository, IMapper mapper, ILogger<CategoryService> logger)
+        public CategoryService(ICategoryRepository categoryRepository, IMapper mapper)
         {
             _categoryRepository = categoryRepository;
             _mapper = mapper;
-            _logger = logger;
 
         }
 
@@ -197,5 +195,6 @@ namespace finance_management.Services
         {
             return await _categoryRepository.GetSpendingAnalyticsAsync(catCode, startDate, endDate, direction);
         }
+        
     }
 }

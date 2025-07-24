@@ -3,6 +3,7 @@ using finance_management.Interfaces;
 using finance_management.Models.Enums;
 using finance_management.Queries.GetSpendingAnalytics;
 using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Office.Interop.Excel;
@@ -32,18 +33,37 @@ namespace finance_management.Controllers
            [FromQuery(Name = "start-date")] DateTime? startDate,
            [FromQuery(Name = "end-date")] DateTime? endDate, [FromQuery] DirectionEnum? direction)
         {
-
-            var query = new GetSpendingAnalyticsQuery
+            try
             {
-                CatCode = catCode,
-                StartDate = startDate,
-                EndDate = endDate,
-                Direction = direction
-            };
+                var query = new GetSpendingAnalyticsQuery
+                {
+                    CatCode = catCode,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Direction = direction
+                };
 
-            var result = await _mediator.Send(query);
+                var result = await _mediator.Send(query);
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (ValidationException ex)
+            {
+          
+                var response = new ValidationResponse
+                {
+                    Errors = ex.Errors
+                };
+                return BadRequest(response);
+            }
+            catch (BusinessException ex)
+            {
+                return StatusCode(440, ex.Error);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An internal server error occurred" });
+            }
         }
 
 
