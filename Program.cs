@@ -2,8 +2,7 @@ using AutoMapper;
 using DotNetEnv;
 using finance_management.Database;
 using finance_management.Interfaces;
-using finance_management.Mapping;
-using finance_management.Mapping;
+using finance_management.Models;
 using finance_management.Repository;
 using finance_management.Services;
 using FluentValidation;
@@ -13,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
 using System.Reflection;
+using System.Text.Json.Serialization;
 
 
 Env.Load();
@@ -29,7 +29,11 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
         options.SerializerSettings.Converters.Add(new StringEnumConverter());
-    });
+    })
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    }); ;
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
@@ -38,22 +42,22 @@ var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
 builder.Services.AddDbContext<PfmDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
-builder.Services.AddScoped<ITransactionService, TransactionService>();
-
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddControllers(options =>
 {
-    c.OperationFilter<SwaggerFileOperationFilter>();
-    
+    options.InputFormatters.Insert(0, new TextPlainInputFormatter());
 });
-builder.Services.AddScoped<CsvTransactionImporter>();
-builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddSwaggerGen();
 builder.Services.AddValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-
-builder.Services.AddScoped<ITransactionImportService, TransactionImportService>();
+builder.Services.AddScoped<CsvProcessingService>();
+builder.Services.AddScoped<CsvValidationService>();
+builder.Services.AddScoped<ErrorLoggingService>();
 
 var app = builder.Build();
 

@@ -12,8 +12,8 @@ using finance_management.Database;
 namespace finance_management.Migrations
 {
     [DbContext(typeof(PfmDbContext))]
-    [Migration("20250720101509_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250720121255_FixedEnumToString")]
+    partial class FixedEnumToString
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,7 +36,6 @@ namespace finance_management.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("BeneficiaryName")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
@@ -52,11 +51,14 @@ namespace finance_management.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<int>("Direction")
-                        .HasColumnType("integer");
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)");
 
-                    b.Property<int>("Kind")
-                        .HasColumnType("integer");
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int?>("MccCode")
                         .HasColumnType("integer");
