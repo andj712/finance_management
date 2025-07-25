@@ -78,6 +78,37 @@ namespace finance_management.Commands.SplitTransactions
                 Amount = s.Amount
             }).ToList();
 
+            //provera da nije dva puta napisana ista kategorija
+            var duplicateCodes = request.Splits
+                    .GroupBy(s => s.CatCode)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key);
+
+            if (duplicateCodes.Any())
+            {
+                throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError
+                            {
+                                Tag = "splits",
+                                Error = ErrorEnum.Duplicate.ToString(),
+                                Message = $"Duplicate categories found: {string.Join(", ", duplicateCodes)}"
+                            }
+                        });
+                                }
+            //provera da li ima dva splita bar
+            if (request.Splits.Count()<2)
+            {
+                            throw new ValidationException(new List<ValidationError>
+                {
+                    new ValidationError
+                    {
+                        Tag = "splits",
+                        Error = ErrorEnum.Required.ToString(),
+                        Message = "At least two split is required"
+                    }
+                });
+                        }
             await _splitRepository.CreateSplitsAsync(splits);
 
             return Unit.Value;
