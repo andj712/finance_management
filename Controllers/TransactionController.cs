@@ -10,6 +10,7 @@ using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using ValidationException = finance_management.Validations.Exceptions.ValidationException;
 
@@ -186,6 +187,15 @@ namespace finance_management.Controllers
             catch (BusinessException ex)
             {
                 return BadRequest(ex.Error);
+            }
+            catch (DbUpdateException ex)
+            {
+                return StatusCode(500, new { message = "Database error occurred" });
+            }
+            catch (Exception ex)
+            {
+                // Log the error  
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
 

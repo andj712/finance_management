@@ -2,6 +2,7 @@
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using MediatR;
+using Microsoft.Office.Interop.Excel;
 
 namespace finance_management.Commands.SplitTransactions
 {
@@ -22,6 +23,46 @@ namespace finance_management.Commands.SplitTransactions
 
         public async Task<Unit> Handle(SplitTransactionCommand request, CancellationToken cancellationToken)
         {
+            var errors = new List<ValidationError>();
+            if (string.IsNullOrWhiteSpace(request.TransactionId))
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "id",
+                    Error = ErrorEnum.Required.ToString(),
+                    Message = "Transaction ID is required"
+                });
+            }
+
+            if (request.Splits == null || request.Splits.Count()<2)
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "splits",
+                    Error = ErrorEnum.Required.ToString(),
+                    Message = "At least two splits are required"
+                });
+            }
+            else
+            {
+                for (int i = 0; i < request.Splits.Count; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(request.Splits[i].CatCode))
+                    {
+                        errors.Add(new ValidationError
+                        {
+                            Tag = $"splits[{i}].cat-code",
+                            Error = ErrorEnum.Required.ToString(),
+                            Message = "Category code is required"
+                        });
+                    }
+                }
+            }
+
+            if (errors.Any())
+                throw new ValidationException(errors);
+
+
             // prvo da li transakcija postoji
             var transaction = await _transactionRepository.GetByIdAsync(request.TransactionId);
             if (transaction == null)
@@ -35,25 +76,20 @@ namespace finance_management.Commands.SplitTransactions
             }
 
             // da li kategorija postoji
-            var categoryValidationErrors = new List<ValidationError>();
             foreach (var split in request.Splits)
             {
                 var category = await _categoryRepository.GetByCodeAsync(split.CatCode);
                 if (category == null)
                 {
-                    categoryValidationErrors.Add(new ValidationError
+                    throw new BusinessException(new BusinessError
                     {
-                        Tag = "catcode",
-                        Error = ErrorEnum.InvalidValue.ToString(),
-                        Message = $"Category with code {split.CatCode} does not exist"
+                        Problem = "transaction-not-found",
+                        Message = "Transaction not found",
+                        Details = $"Transaction with ID {request.TransactionId} does not exist"
                     });
                 }
             }
 
-            if (categoryValidationErrors.Any())
-            {
-                throw new ValidationException(categoryValidationErrors);
-            }
 
             // da suma splitova bude jednaka iznosu transakcije
             var totalSplitAmount = request.Splits.Sum(s => s.Amount);
@@ -96,19 +132,7 @@ namespace finance_management.Commands.SplitTransactions
                             }
                         });
                                 }
-            //provera da li ima dva splita bar
-            if (request.Splits.Count()<2)
-            {
-                            throw new ValidationException(new List<ValidationError>
-                {
-                    new ValidationError
-                    {
-                        Tag = "splits",
-                        Error = ErrorEnum.Required.ToString(),
-                        Message = "At least two split is required"
-                    }
-                });
-                        }
+            
             await _splitRepository.CreateSplitsAsync(splits);
 
             return Unit.Value;

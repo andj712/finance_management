@@ -10,6 +10,7 @@ using finance_management.Validations.Log;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Office.Interop.Excel;
@@ -43,7 +44,11 @@ builder.Services.AddDbContext<PfmDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
 
-
+//da iskljucim automatsku validaciju
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg =>
