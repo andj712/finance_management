@@ -24,11 +24,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
-    .AddFluentValidation(fv =>
-    {
-        fv.RegisterValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
-        fv.DisableDataAnnotationsValidation = true;
-    })
+    
     .AddNewtonsoftJson(options =>
     {
         options.SerializerSettings.Converters.Add(new StringEnumConverter());
@@ -49,8 +45,8 @@ builder.Services.AddDbContext<PfmDbContext>(options =>
 
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddSwaggerGen();
-builder.Services.AddValidatorsFromAssemblyContaining<SplitTransactionRequestValidator>();
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(CategorizeTransactionCommandHandler).Assembly)); 
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -62,6 +58,7 @@ builder.Services.AddScoped<ErrorLoggingService>();
 builder.Services.AddScoped<CategorizeTransactionCommandHandler>();
 builder.Services.AddScoped<CategoryErrorLoggingService>();
 builder.Services.AddScoped<SpendingAnalyticsErrorLoggingService>();
+
 
 
 

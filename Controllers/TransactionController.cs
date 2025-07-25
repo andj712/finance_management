@@ -3,6 +3,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
+using finance_management.Commands.SplitTransactions;
 using finance_management.Database;
 using finance_management.DTOs;
 using finance_management.DTOs.CategorizeTransaction;
@@ -26,7 +27,7 @@ using System.Globalization;
 using System.Net.WebSockets;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using Errors = finance_management.Validations.Errors.ValidationError;
+
 
 
 namespace finance_management.Controllers
@@ -35,19 +36,13 @@ namespace finance_management.Controllers
     [Route("transactions")]
     public class TransactionController : ControllerBase
     {
-        private readonly PfmDbContext _db;
-        private readonly ILogger<TransactionController> _logger;
-        private readonly CategorizeTransactionCommandHandler _categorizeHandler;
-        private readonly ITransactionService _transactionService;
+   
         private readonly IMediator _mediator;
 
-        public TransactionController(PfmDbContext db, ITransactionService transactionService,IMediator mediator, ILogger<TransactionController> logger, CategorizeTransactionCommandHandler categorizeHandler)
+        public TransactionController(IMediator mediator)
         {
-            _db = db;
-            _transactionService = transactionService;
+            
             _mediator = mediator;
-            _categorizeHandler = categorizeHandler;
-            _logger = logger;
         }
 
 
@@ -97,9 +92,9 @@ namespace finance_management.Controllers
         }
 
         [HttpPost("import")]
-        public async Task<IActionResult> ImportTransactions(IFormFile file)
+        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionsCommand command)
         {
-            if (file == null)
+            if (command?.CsvFile == null || command.CsvFile.Length == 0)
             {
                 return BadRequest(new ValidationResponse
                 {
@@ -115,7 +110,7 @@ namespace finance_management.Controllers
                 });
             }
 
-            var command = new ImportTransactionsCommand(file);
+           
             var result = await _mediator.Send(command);
 
             if (result.ValidationErrors.Any() && result.ImportedCount == 0)
@@ -162,7 +157,7 @@ namespace finance_management.Controllers
                 CatCode = request.CatCode
             };
 
-            var result = await _categorizeHandler.HandleAsync(command);
+            var result = await _mediator.Send(command);
 
             if (result.ValidationErrors.Any())
             {
@@ -188,51 +183,11 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split(string id, [FromBody] SplitTransactionRequest request)
+        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] SplitTransactionCommand command)
         {
-            var original = await _db.Transactions.FindAsync(id);
-            if (original == null)
-                return NotFound();
-
-            // Validacija modela
-            var validator = new SplitTransactionRequestValidator();
-            var validationResult = await validator.ValidateAsync(request);
-            
-
-            // split mora biti manji ili jednak originalu
-            if (request.SplitAmount > original.Amount)
-            {
-                return StatusCode(440, new
-                {
-                    problem = "split-amount-over-transaction-amount",
-                    message = "SplitAmount je veći od Amount originalne transakcije",
-                    details = $"Originalnа Amount: {original.Amount}, SplitAmount: {request.SplitAmount}"
-                });
-            }
-
-            // nova transakcija
-            var remainder = original.Amount - request.SplitAmount;
-
-            var newTransaction = new Transaction
-            {
-                Id = original.Id,
-                BeneficiaryName = original.BeneficiaryName,
-                Date = original.Date,
-                Direction = original.Direction,
-                Amount = request.SplitAmount,
-                Description = request.NewDescription ?? original.Description,
-                Currency = original.Currency,
-                MccCode= original.MccCode,
-                Kind = original.Kind
-            };
-
-            // u originalnoj ostaje samo ostatak
-            original.Amount = remainder;
-
-            await _db.Transactions.AddAsync(newTransaction);
-            await _db.SaveChangesAsync();
-
-            return Ok(new { original, newTransaction });
+            command.TransactionId = id;
+            var result = await _mediator.Send(command);
+            return Ok();
         }
 
        

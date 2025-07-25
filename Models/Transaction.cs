@@ -20,7 +20,7 @@ namespace finance_management.Models
 
         [Required]
         [Precision(18, 2)]
-        public decimal Amount { get; set; }
+        public double Amount { get; set; }
 
         
         public string? Description { get; set; }

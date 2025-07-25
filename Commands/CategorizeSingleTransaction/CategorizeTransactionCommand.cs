@@ -1,8 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using finance_management.DTOs.CategorizeTransaction;
+using MediatR;
+using System.ComponentModel.DataAnnotations;
 
 namespace finance_management.Commands.CategorizeSingleTransaction
 {
-    public class CategorizeTransactionCommand
+    public class CategorizeTransactionCommand:IRequest<CategorizeTransactionResult>
     {
         public string TransactionId { get; set; } = string.Empty;
 
