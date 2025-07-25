@@ -63,7 +63,7 @@ namespace finance_management.Repository
         public async Task<SpendingAnalytics> GetSpendingAnalyticsAsync(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
         {
             //davanje default vrednosti za start i end date za slucaj da su null
-            startDate ??= new DateTime(2021, 1, 1);
+            startDate ??= DateTime.Today.AddDays(-365);
             endDate ??= DateTime.Today;
 
             startDate = startDate.Value.ToUniversalTime();
@@ -71,24 +71,22 @@ namespace finance_management.Repository
 
             var results = new List<SpendingAnalyticsInCategory>();
 
-            //analitika od onih koje imaju split
-            var splitQuery = from t in _context.Transactions
-                             join s in _context.Splits on t.Id equals s.TransactionId
-                             where t.Date > startDate.Value && t.Date < endDate.Value
-                             select new { t, s };
+            // transakcije sa splitovima
+            var splitQuery = _context.Transactions
+                .Join(_context.Splits, t => t.Id, s => s.TransactionId, (t, s) => new { t, s })
+                .Where(x => x.t.Date > startDate.Value && x.t.Date < endDate.Value);
 
-            // dodaj filter za direction ako je naveden
             if (direction != null)
-            {
                 splitQuery = splitQuery.Where(x => x.t.Direction == direction);
-            }
 
-            // dodaj filter za catCode ako je naveden
             if (!string.IsNullOrEmpty(catCode))
             {
-                splitQuery = splitQuery.Where(x => x.s.CatCode == catCode);
+                // ukljuci splitove koji su te kategorije ili podkategorije od te kategorije
+                splitQuery = splitQuery.Where(x =>
+                    x.s.CatCode == catCode ||
+                    _context.Categories.Any(c => c.Code == x.s.CatCode && c.ParentCode == catCode));
             }
-
+            //prebaci u Listu tipa SpendingAnalyticsInCategory
             var splitResults = await splitQuery
                 .GroupBy(x => x.s.CatCode)
                 .Select(group => new SpendingAnalyticsInCategory
@@ -101,26 +99,26 @@ namespace finance_management.Repository
 
             results.AddRange(splitResults);
 
-            // analitika od transakcija koje nemaju split
-            var transactionIds = await _context.Splits.Select(s => s.TransactionId).Distinct().ToListAsync();
+            // Analitika za transakcije bez splitova
+            var splitTransactionIds = await _context.Splits.Select(s => s.TransactionId).ToListAsync();//svi id transakcija sa splitovima
 
             var transactionQuery = _context.Transactions
                 .Where(t => t.Date > startDate.Value && t.Date < endDate.Value
                            && t.CatCode != null
-                           && !transactionIds.Contains(t.Id)); // Transactions that don't have splits
+                           && !splitTransactionIds.Contains(t.Id));//da nije transakcija sa splitom
 
-            // dodaj direction 
             if (direction != null)
-            {
                 transactionQuery = transactionQuery.Where(t => t.Direction == direction);
-            }
 
-            // dodaj filter za catCode ako je naveden
             if (!string.IsNullOrEmpty(catCode))
             {
-                transactionQuery = transactionQuery.Where(t => t.CatCode == catCode);
+                // da kategorija transakcije bude trazene kategorije ili njene podkategorije
+                transactionQuery = transactionQuery.Where(t =>
+                    t.CatCode == catCode ||
+                    _context.Categories.Any(c => c.Code == t.CatCode && c.ParentCode == catCode));
             }
 
+            //prebaci u Listu tipa SpendingAnalyticsInCategory
             var transactionResults = await transactionQuery
                 .GroupBy(t => t.CatCode)
                 .Select(group => new SpendingAnalyticsInCategory
@@ -133,7 +131,7 @@ namespace finance_management.Repository
 
             results.AddRange(transactionResults);
 
-            // 3. spoji rezultat ako se ista kategorija pojavljuje u splitovima i obicnim transakcijama
+            // Merge duplicates
             var finalResults = results
                 .GroupBy(r => r.CatCode)
                 .Select(group => new SpendingAnalyticsInCategory
@@ -144,12 +142,9 @@ namespace finance_management.Repository
                 })
                 .ToList();
 
-            return new SpendingAnalytics
-            {
-                Groups = finalResults
-            };
+            return new SpendingAnalytics { Groups = finalResults };
+
         }
 
-       
     }
 }
