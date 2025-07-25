@@ -39,6 +39,7 @@ namespace finance_management.Models
 
         // Navigation property
         public virtual Category? Category { get; set; }
+        public virtual ICollection<Split> Splits { get; set; } = new List<Split>();
 
     }
 }

@@ -1,33 +1,17 @@
-﻿using AutoMapper;
-using CsvHelper;
-using CsvHelper.Configuration;
+﻿using CsvHelper;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
 using finance_management.Commands.SplitTransactions;
-using finance_management.Database;
 using finance_management.DTOs;
 using finance_management.DTOs.CategorizeTransaction;
-using finance_management.DTOs.ImportTransaction;
-using finance_management.Interfaces;
-using finance_management.Mapping;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
-using finance_management.Services;
 using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
 using MediatR;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Office.Interop.Excel;
-using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
-using System.Formats.Asn1;
-using System.Globalization;
-using System.Net.WebSockets;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
+using ValidationException = finance_management.Validations.Exceptions.ValidationException;
 
 
 namespace finance_management.Controllers
@@ -183,11 +167,26 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] SplitTransactionCommand command)
+        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] List<SingleCategorySplit> splits )
         {
-            command.TransactionId = id;
-            var result = await _mediator.Send(command);
-            return Ok();
+            try
+            {
+                var command = new SplitTransactionCommand
+                {
+                    TransactionId = id,
+                    Splits = splits,
+                };
+                await _mediator.Send(command);
+                return Ok();
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(new ValidationResponse { Errors = ex.Errors });
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ex.Error);
+            }
         }
 
        

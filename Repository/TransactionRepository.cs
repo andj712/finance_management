@@ -22,9 +22,17 @@ namespace finance_management.Repository
         public async Task<Transaction?> GetByIdAsync(string id)
         {
             return await _context.Transactions
+                .Include(t => t.Category)
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
-
+        public async Task<List<Transaction>> GetAllWithSplitsAsync()
+        {
+            return await _context.Transactions
+                .Include(t => t.Category)
+                .Include(t => t.Splits)
+                    .ThenInclude(s => s.Category)
+                .ToListAsync();
+        }
         public async Task<Transaction> CreateAsync(Transaction transaction)
         {
             _context.Transactions.Add(transaction);

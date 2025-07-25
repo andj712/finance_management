@@ -11,6 +11,7 @@ namespace finance_management.Database
 
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Split> Splits { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,9 +53,25 @@ namespace finance_management.Database
                       .HasForeignKey(e => e.ParentCode)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // Index on ParentCode for better performance
                 entity.HasIndex(e => e.ParentCode);
             });
+            modelBuilder.Entity<Split>(entity =>
+            {
+                entity.HasKey(e => new { e.TransactionId, e.CatCode });
+                entity.Property(e => e.Amount).HasPrecision(18, 2);
+
+                entity.HasOne(e => e.Transaction)
+                      .WithMany(t => t.Splits)
+                      .HasForeignKey(e => e.TransactionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Category)
+                      .WithMany(c => c.Splits)
+                      .HasForeignKey(e => e.CatCode)
+                      .HasPrincipalKey(c => c.Code)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -87,7 +87,7 @@ namespace finance_management.Services
             }
             else
             {
-                transaction.Amount = amount;
+                transaction.Amount = (double)amount;
             }
 
             // Validate Currency
