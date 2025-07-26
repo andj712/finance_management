@@ -1,0 +1,439 @@
+{
+  "info": {
+    "name": "Categorize Transaction API Tests",
+    "description": "API tests for POST /transactions/{id}/categorize endpoint with status code and schema validation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Categorize Transaction - Success",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cat-code\": \"B\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/15267535/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "15267535",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Response time validation",
+              "pm.test(\"Response time is less than 5000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+              "});",
+              "",
+              "// Content-Type validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    const contentType = pm.response.headers.get(\"Content-Type\");",
+              "    pm.expect(contentType).to.not.be.undefined;",
+              "    pm.expect(contentType).to.include(\"application/json\");",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    pm.expect(pm.response.text()).to.not.be.empty;",
+              "    ",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.be.an('object');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson.message).to.be.a('string');",
+              "    pm.expect(responseJson.message).to.eql('Transaction categorized successfully');",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Success message is correct\", function () {",
+              "    if (pm.response.text() && pm.response.text().length > 0) {",
+              "        const responseJson = pm.response.json();",
+              "        pm.expect(responseJson.message).to.include('successfully');",
+              "    } else {",
+              "        pm.test.skip('Response body is empty');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorize Transaction - Missing Category Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cat-code\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/15267535/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "15267535",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Response time validation",
+              "pm.test(\"Response time is less than 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Content-Type validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    pm.expect(responseJson).to.be.an('object');",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    pm.expect(responseJson.errors.length).to.be.greaterThan(0);",
+              "    ",
+              "    const error = responseJson.errors[0];",
+              "    pm.expect(error).to.have.property('tag');",
+              "    pm.expect(error).to.have.property('error');",
+              "    pm.expect(error).to.have.property('message');",
+              "    pm.expect(error.tag).to.be.a('string');",
+              "    pm.expect(error.error).to.be.a('string');",
+              "    pm.expect(error.message).to.be.a('string');",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Error is about required category code\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    const error = responseJson.errors[0];",
+              "    pm.expect(error.tag).to.eql('cat-code');",
+              "    pm.expect(error.error).to.eql('Required');",
+              "    pm.expect(error.message).to.include('required');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorize Transaction - Empty Body",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/15267535/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "15267535",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Response time validation",
+              "pm.test(\"Response time is less than 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Content-Type validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    pm.expect(responseJson).to.be.an('object');",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    pm.expect(responseJson.errors.length).to.be.greaterThan(0);",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Validation errors structure is correct\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    responseJson.errors.forEach(error => {",
+              "        pm.expect(error).to.have.all.keys('tag', 'error', 'message');",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorize Transaction - Transaction Not Found",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cat-code\": \"B\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/99999999999/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "99999999999",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 440\", function () {",
+              "    pm.response.to.have.status(440);",
+              "});",
+              "",
+              "// Response time validation",
+              "pm.test(\"Response time is less than 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Content-Type validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    pm.expect(responseJson).to.be.an('object');",
+              "    pm.expect(responseJson).to.have.property('problem');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson).to.have.property('details');",
+              "    pm.expect(responseJson.problem).to.be.a('string');",
+              "    pm.expect(responseJson.message).to.be.a('string');",
+              "    pm.expect(responseJson.details).to.be.a('string');",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Error is about transaction not found\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.problem).to.eql('TransactionNotFound');",
+              "    pm.expect(responseJson.message).to.include('not found');",
+              "    pm.expect(responseJson.details).to.include('99999999999');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorize Transaction - Category Not Found",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cat-code\": \"NONEXISTENT\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/15267535/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "15267535",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 440\", function () {",
+              "    pm.response.to.have.status(440);",
+              "});",
+              "",
+              "// Response time validation",
+              "pm.test(\"Response time is less than 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Content-Type validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    pm.expect(responseJson).to.be.an('object');",
+              "    pm.expect(responseJson).to.have.property('problem');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson).to.have.property('details');",
+              "    pm.expect(responseJson.problem).to.be.a('string');",
+              "    pm.expect(responseJson.message).to.be.a('string');",
+              "    pm.expect(responseJson.details).to.be.a('string');",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Error is about category not found\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.problem).to.eql('CategoryNotFound');",
+              "    pm.expect(responseJson.message).to.include('not found');",
+              "    pm.expect(responseJson.details).to.include('NONEXISTENT');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorize Transaction - Null Category Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cat-code\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/15267535/categorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "transactions",
+            "15267535",
+            "categorize"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Status code validation",
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Schema validation",
+              "pm.test(\"Response schema validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "});",
+              "",
+              "// Business logic validation",
+              "pm.test(\"Handles null category code\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    const hasRequiredError = responseJson.errors.some(error => ",
+              "        error.tag === 'cat-code' && error.error === 'Required'",
+              "    );",
+              "    pm.expect(hasRequiredError).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default values if not already set",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    pm.environment.set('baseUrl', 'https://localhost:7263');",
+          "}"
+        ]
+      }
+    }
+  ]
+}
