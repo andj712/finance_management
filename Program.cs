@@ -38,6 +38,7 @@ builder.Services.AddControllers()
             NamingStrategy = new KebabCaseNamingStrategy()
         };
         options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+        options.SerializerSettings.Converters.Add(new StringEnumConverter());
     })
     .AddJsonOptions(options =>
     {

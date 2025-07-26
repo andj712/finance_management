@@ -16,7 +16,6 @@ namespace finance_management.Interfaces
         Task<Transaction?> GetByIdAsync(string id);
         Task UpdateCategoryAsync(string transactionId, string catCode);
 
-        Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery query, CancellationToken cancellationToken);
-
+        Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery query, CancellationToken cancellationToken = default);
     }
 }

@@ -1,8 +1,10 @@
-﻿using finance_management.Database;
+﻿using AutoMapper;
+using finance_management.Database;
 using finance_management.DTOs.GetTransactions;
 using finance_management.Interfaces;
 using finance_management.Models;
 using finance_management.Models.Enums;
+using finance_management.Repository;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using finance_management.Validations.Logging;
@@ -15,30 +17,28 @@ namespace finance_management.Queries.GetTransactions
     {
         private readonly ITransactionRepository _repository;
         private readonly IErrorLoggingService _errorLoggingService;
+        private readonly IMapper _mapper;
         private static readonly string[] AllowedSortFields = {
         "id","date","amount","beneficiary-name","description",
         "currency","mcc-code","kind","cat-code","direction"
         };
-        public GetTransactionsQueryHandler(ITransactionRepository repository,ErrorLoggingService errorLoggingService)
+        public GetTransactionsQueryHandler(ITransactionRepository repository,ErrorLoggingService errorLoggingService,IMapper mapper)
         {
             _repository = repository;
             _errorLoggingService = errorLoggingService;
+            _mapper = mapper;
         }
 
-        public async Task<TransactionPagedList> Handle(
-       GetTransactionsQuery request,
-       CancellationToken cancellationToken)
+        public async Task<TransactionPagedList> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
         {
-            // 1) Validiraj request
             var errors = Validate(request);
             if (errors.Any())
             {
-                // 2) Loguj i baci exception
                 await _errorLoggingService.LogErrorsAsync(errors);
                 throw new ValidationException(errors);
             }
 
-            // 3) Pozovi repozitorijum i vrati rezultat
+            // repository vraca TransactionPagedList 
             try
             {
                 return await _repository.GetTransactionsAsync(request, cancellationToken);
@@ -50,64 +50,119 @@ namespace finance_management.Queries.GetTransactions
             }
         }
 
-        private List<ValidationError> Validate(GetTransactionsQuery q)
+        private List<ValidationError> Validate(GetTransactionsQuery request)
         {
             var errors = new List<ValidationError>();
 
-            //transaction kind
-            if (!string.IsNullOrWhiteSpace(q.TransactionKind))
+            // Validacija transaction kinds
+            if (!string.IsNullOrWhiteSpace(request.TransactionKind))
             {
-                foreach (var raw in q.TransactionKind
-                             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                var kinds = request.TransactionKind.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var kind in kinds)
                 {
-                    if (!Enum.TryParse<TransactionKindEnum>(raw, true, out _))
+                    if (!Enum.TryParse<TransactionKindEnum>(kind, true, out _))
                     {
                         errors.Add(new ValidationError
                         {
                             Tag = "transaction-kind",
                             Error = ErrorEnum.InvalidValue.ToString(),
-                            Message = $"Unsupported kind '{raw}'."
+                            Message = $"Unsupported transaction kind '{kind}'. Valid values: {string.Join(", ", Enum.GetNames<TransactionKindEnum>())}"
                         });
                     }
                 }
             }
 
-            //sort-by
-            var fields = (q.SortBy ?? "date")
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(f => f.ToLower());
-            foreach (var f in fields)
+           
+            
+
+            // Validate sort fields
+            if (!string.IsNullOrWhiteSpace(request.SortBy))
             {
-                if (!AllowedSortFields.Contains(f))
+                var sortFields = request.SortBy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var field in sortFields)
                 {
-                    errors.Add(new ValidationError
+                    if (!AllowedSortFields.Contains(field.ToLower()))
                     {
-                        Tag = "sort-by",
-                        Error = ErrorEnum.InvalidValue.ToString(),
-                        Message = $"Unsupported sort field '{f}'."
-                    });
+                        errors.Add(new ValidationError
+                        {
+                            Tag = "sort-by",
+                            Error = ErrorEnum.InvalidValue.ToString(),
+                            Message = $"Unsupported sort field '{field}'. Valid fields: {string.Join(", ", AllowedSortFields)}"
+                        });
+                    }
                 }
             }
 
-            // page page-size range
-            if (q.Page <= 0)
+            // Validate pagination
+            if (request.Page <= 0)
             {
                 errors.Add(new ValidationError
                 {
                     Tag = "page",
                     Error = ErrorEnum.InvalidValue.ToString(),
-                    Message = "Page must be >= 1."
+                    Message = "Page must be >= 1"
                 });
             }
-            if (q.PageSize < 1 || q.PageSize > 100)
+
+            if (request.PageSize < 1 || request.PageSize > 100)
             {
                 errors.Add(new ValidationError
                 {
                     Tag = "page-size",
                     Error = ErrorEnum.InvalidValue.ToString(),
-                    Message = "PageSize must be between 1 and 100."
+                    Message = "Page size must be between 1 and 100"
                 });
             }
+
+            if (request.StartDate.HasValue)
+            {
+                if (request.StartDate.Value > DateTime.Today)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "start-date",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Start date cannot be in the future"
+                    });
+                }
+            }
+            if (request.EndDate.HasValue)
+            {
+                if (request.EndDate.Value < new DateTime(2010, 1, 1))
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "end-date",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "End date is too far in the past"
+                    });
+                }
+            }
+
+            if (request.StartDate.HasValue && request.EndDate.HasValue)
+            {
+                if (request.StartDate.Value > request.EndDate.Value)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "date-range",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Start date cannot be after end date"
+                    });
+                }
+
+                var range = request.EndDate.Value - request.StartDate.Value;
+                if (range.TotalDays > 365)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "date-range",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Date range cannot exceed 365 days"
+                    });
+                }
+            }
+
 
             return errors;
         }

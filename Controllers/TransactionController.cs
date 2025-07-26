@@ -24,35 +24,36 @@ namespace finance_management.Controllers
     {
    
         private readonly IMediator _mediator;
-        private IMapper _mapper;
 
-        public TransactionController(IMediator mediator,IMapper mapper)
+        public TransactionController(IMediator mediator)
         {
             
             _mediator = mediator;
-            _mapper = mapper;
         }
 
 
         [HttpGet]
         public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQuery query)
         {
-            var validationResults = new List<ValidationResult>();
-            var context = new ValidationContext(query);
-            if (!Validator.TryValidateObject(query, context, validationResults, true))
+            try
             {
-                var errors = validationResults.Select(e => new ValidationError
-                {
-                    Tag = e.MemberNames.FirstOrDefault() ?? "unknown",
-                    Error = ErrorEnum.InvalidValue.ToString(),
-                    Message = e.ErrorMessage ?? "Validation failed"
-                }).ToList();
-
-                throw new ValidationException(errors);
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(new { errors = ex.Errors });
+            }
+            catch (BusinessException ex)
+            {
+                return StatusCode(440, ex.Error);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
 
-            var result = await _mediator.Send(query);
-            return Ok(result);
+ 
         }
 
         [HttpPost("import")]
