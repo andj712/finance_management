@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace finance_management.Commands.CategorizeSingleTransaction
 {
-    public class CategorizeTransactionCommandHandler
+    public class CategorizeTransactionCommandHandler : IRequestHandler<CategorizeTransactionCommand, CategorizeTransactionResult>
     {
         private readonly ITransactionService _transactionService;
         private readonly ICategoryService _categoryService;
@@ -27,7 +27,7 @@ namespace finance_management.Commands.CategorizeSingleTransaction
             _errorLoggingService = errorLoggingService;
         }
 
-        public async Task<CategorizeTransactionResult> HandleAsync(CategorizeTransactionCommand command)
+        public async Task<CategorizeTransactionResult> Handle(CategorizeTransactionCommand command, CancellationToken cancellationToken)
         {
             var result = new CategorizeTransactionResult();
             var allErrors = new List<ValidationError>();

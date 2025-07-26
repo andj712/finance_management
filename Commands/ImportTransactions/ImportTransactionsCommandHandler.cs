@@ -8,6 +8,7 @@ using finance_management.Models.Enums;
 using finance_management.Services;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Log;
+using finance_management.Validations.Logging;
 using MediatR;
 using System.Globalization;
 

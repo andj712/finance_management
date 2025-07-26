@@ -1,5 +1,6 @@
 ﻿using finance_management.Commands;
 using finance_management.Commands.ImportCategories;
+using finance_management.DTOs.ImportCategory;
 using finance_management.Validations.Errors;
 using finance_management.Validations.Exceptions;
 using MediatR;
@@ -21,11 +22,11 @@ namespace finance_management.Controllers
 
         [HttpPost("import")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> ImportCategories(IFormFile file)
+        public async Task<IActionResult> ImportCategories([FromForm] ImportCategoriesCommand command)
         {
             try
             {
-                if (file == null || file.Length == 0)
+                if ( command?.File == null || command.File.Length == 0)
                 {
                     return BadRequest(new ValidationResponse
                     {
@@ -41,7 +42,7 @@ namespace finance_management.Controllers
                     });
                 }
 
-                var command = new ImportCategoriesCommand { File = file };
+               
                 var result = await _mediator.Send(command);
 
                 return Ok(new { categories = result });

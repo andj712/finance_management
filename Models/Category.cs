@@ -20,8 +20,10 @@ namespace finance_management.Models
         public string? ParentCode { get; set; }
 
         // Navigation properties
+        public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+        public virtual ICollection<Split> Splits { get; set; } = new List<Split>();
         public virtual Category? ParentCategory { get; set; }
         public virtual ICollection<Category> ChildCategories { get; set; } = new List<Category>();
-        public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+
     }
 }

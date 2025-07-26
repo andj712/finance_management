@@ -1,4 +1,6 @@
-﻿using finance_management.Models;
+﻿using finance_management.DTOs.GetTransactions;
+using finance_management.Models;
+using finance_management.Queries.GetTransactions;
 
 namespace finance_management.Interfaces
 {
@@ -13,5 +15,7 @@ namespace finance_management.Interfaces
         IQueryable<Transaction> Query();
         Task<Transaction?> GetByIdAsync(string id);
         Task UpdateCategoryAsync(string transactionId, string catCode);
+
+        Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery query, CancellationToken cancellationToken = default);
     }
 }

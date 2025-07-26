@@ -1,32 +1,19 @@
 ﻿using AutoMapper;
 using CsvHelper;
-using CsvHelper.Configuration;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
-using finance_management.Database;
-using finance_management.DTOs;
+using finance_management.Commands.SplitTransactions;
 using finance_management.DTOs.CategorizeTransaction;
-using finance_management.DTOs.ImportTransaction;
-using finance_management.Interfaces;
-using finance_management.Mapping;
+using finance_management.DTOs.GetTransactions;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
-using finance_management.Services;
 using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
 using MediatR;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Office.Interop.Excel;
-using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
-using System.Formats.Asn1;
-using System.Globalization;
-using System.Net.WebSockets;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Errors = finance_management.Validations.Errors.ValidationError;
+using ValidationException = finance_management.Validations.Exceptions.ValidationException;
 
 
 namespace finance_management.Controllers
@@ -35,71 +22,44 @@ namespace finance_management.Controllers
     [Route("transactions")]
     public class TransactionController : ControllerBase
     {
-        private readonly PfmDbContext _db;
-        private readonly ILogger<TransactionController> _logger;
-        private readonly CategorizeTransactionCommandHandler _categorizeHandler;
-        private readonly ITransactionService _transactionService;
+   
         private readonly IMediator _mediator;
 
-        public TransactionController(PfmDbContext db, ITransactionService transactionService,IMediator mediator, ILogger<TransactionController> logger, CategorizeTransactionCommandHandler categorizeHandler)
+        public TransactionController(IMediator mediator)
         {
-            _db = db;
-            _transactionService = transactionService;
+            
             _mediator = mediator;
-            _categorizeHandler = categorizeHandler;
-            _logger = logger;
         }
 
 
         [HttpGet]
-        public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQueryDTO queryDto)
+        public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQuery query)
         {
-            
-            var validationResults = new List<ValidationResult>();
-            var validationContext = new ValidationContext(queryDto);
-
-            if (!Validator.TryValidateObject(queryDto, validationContext, validationResults, true))
-            {
-                foreach (var error in validationResults)
-                {
-                    foreach (var memberName in error.MemberNames)
-                    {
-                        ModelState.AddModelError(memberName, error.ErrorMessage);
-                    }
-                }
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             try
             {
-                var query = new GetTransactionsQuery
-                {
-                    TransactionKind = queryDto.TransactionKind,
-                    StartDate = queryDto.StartDate,
-                    EndDate = queryDto.EndDate,
-                    Page = queryDto.Page,
-                    PageSize = queryDto.PageSize,
-                    SortBy = queryDto.SortBy,
-                    SortOrder = queryDto.SortOrder
-                };
-
                 var result = await _mediator.Send(query);
                 return Ok(result);
             }
+            catch (ValidationException ex)
+            {
+                return BadRequest(new { errors = ex.Errors });
+            }
+            catch (BusinessException ex)
+            {
+                return StatusCode(440, ex.Error);
+            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
+
+ 
         }
 
         [HttpPost("import")]
-        public async Task<IActionResult> ImportTransactions(IFormFile file)
+        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionsCommand command)
         {
-            if (file == null)
+            if (command?.CsvFile == null || command.CsvFile.Length == 0)
             {
                 return BadRequest(new ValidationResponse
                 {
@@ -115,7 +75,7 @@ namespace finance_management.Controllers
                 });
             }
 
-            var command = new ImportTransactionsCommand(file);
+           
             var result = await _mediator.Send(command);
 
             if (result.ValidationErrors.Any() && result.ImportedCount == 0)
@@ -162,7 +122,7 @@ namespace finance_management.Controllers
                 CatCode = request.CatCode
             };
 
-            var result = await _categorizeHandler.HandleAsync(command);
+            var result = await _mediator.Send(command);
 
             if (result.ValidationErrors.Any())
             {
@@ -188,51 +148,35 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split(string id, [FromBody] SplitTransactionRequest request)
+        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] List<SingleCategorySplit> splits )
         {
-            var original = await _db.Transactions.FindAsync(id);
-            if (original == null)
-                return NotFound();
-
-            // Validacija modela
-            var validator = new SplitTransactionRequestValidator();
-            var validationResult = await validator.ValidateAsync(request);
-            
-
-            // split mora biti manji ili jednak originalu
-            if (request.SplitAmount > original.Amount)
+            try
             {
-                return StatusCode(440, new
+                var command = new SplitTransactionCommand
                 {
-                    problem = "split-amount-over-transaction-amount",
-                    message = "SplitAmount je veći od Amount originalne transakcije",
-                    details = $"Originalnа Amount: {original.Amount}, SplitAmount: {request.SplitAmount}"
-                });
+                    TransactionId = id,
+                    Splits = splits,
+                };
+                await _mediator.Send(command);
+                return Ok();
             }
-
-            // nova transakcija
-            var remainder = original.Amount - request.SplitAmount;
-
-            var newTransaction = new Transaction
+            catch (ValidationException ex)
             {
-                Id = original.Id,
-                BeneficiaryName = original.BeneficiaryName,
-                Date = original.Date,
-                Direction = original.Direction,
-                Amount = request.SplitAmount,
-                Description = request.NewDescription ?? original.Description,
-                Currency = original.Currency,
-                MccCode= original.MccCode,
-                Kind = original.Kind
-            };
-
-            // u originalnoj ostaje samo ostatak
-            original.Amount = remainder;
-
-            await _db.Transactions.AddAsync(newTransaction);
-            await _db.SaveChangesAsync();
-
-            return Ok(new { original, newTransaction });
+                return BadRequest(new ValidationResponse { Errors = ex.Errors });
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ex.Error);
+            }
+            catch (DbUpdateException ex)
+            {
+                return StatusCode(500, new { message = "Database error occurred" });
+            }
+            catch (Exception ex)
+            {
+                // Log the error  
+                return StatusCode(500, new { message = "An unexpected error occurred" });
+            }
         }
 
        

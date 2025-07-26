@@ -1,82 +1,171 @@
-﻿using finance_management.Database;
+﻿using AutoMapper;
+using finance_management.Database;
+using finance_management.DTOs.GetTransactions;
+using finance_management.Interfaces;
 using finance_management.Models;
 using finance_management.Models.Enums;
+using finance_management.Repository;
+using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
+using finance_management.Validations.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace finance_management.Queries.GetTransactions
 {
-    public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, List<Transaction>>
+    public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, TransactionPagedList>
     {
-        private readonly PfmDbContext _db;
-
-        public GetTransactionsQueryHandler(PfmDbContext db)
+        private readonly ITransactionRepository _repository;
+        private readonly IErrorLoggingService _errorLoggingService;
+        private readonly IMapper _mapper;
+        private static readonly string[] AllowedSortFields = {
+        "id","date","amount","beneficiary-name","description",
+        "currency","mcc-code","kind","cat-code","direction"
+        };
+        public GetTransactionsQueryHandler(ITransactionRepository repository,ErrorLoggingService errorLoggingService,IMapper mapper)
         {
-            _db = db;
+            _repository = repository;
+            _errorLoggingService = errorLoggingService;
+            _mapper = mapper;
         }
 
-        public async Task<List<Transaction>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
+        public async Task<TransactionPagedList> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
         {
-            var query = _db.Transactions.AsQueryable();
-
-            // Filter by transaction kind
-            if (request.TransactionKind.HasValue)
+            var errors = Validate(request);
+            if (errors.Any())
             {
-                query = query.Where(t => t.Kind == request.TransactionKind.Value);
+                await _errorLoggingService.LogErrorsAsync(errors);
+                throw new ValidationException(errors);
             }
 
-            // Filter by date range, convert to UTC
-            if (request.StartDate.HasValue)
+            // repository vraca TransactionPagedList 
+            try
             {
-                var utcStartDate = request.StartDate.Value.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc)
-                    : request.StartDate.Value.ToUniversalTime();
-                query = query.Where(t => t.Date >= utcStartDate);
+                return await _repository.GetTransactionsAsync(request, cancellationToken);
             }
-
-            if (request.EndDate.HasValue)
+            catch (BusinessException ex)
             {
-                var utcEndDate = request.EndDate.Value.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc)
-                    : request.EndDate.Value.ToUniversalTime();
-                query = query.Where(t => t.Date <= utcEndDate);
+                await _errorLoggingService.LogBusinessErrorAsync(ex.Error, nameof(GetTransactionsQuery));
+                throw;
             }
+        }
 
-            // Sorting
-            if (!string.IsNullOrEmpty(request.SortBy))
+        private List<ValidationError> Validate(GetTransactionsQuery request)
+        {
+            var errors = new List<ValidationError>();
+
+            // Validacija transaction kinds
+            if (!string.IsNullOrWhiteSpace(request.TransactionKind))
             {
-                switch (request.SortBy.ToLower())
+                var kinds = request.TransactionKind.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var kind in kinds)
                 {
-                    case "date":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.Date)
-                            : query.OrderBy(t => t.Date);
-                        break;
-                    case "amount":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.Amount)
-                            : query.OrderBy(t => t.Amount);
-                        break;
-                    case "beneficiaryname":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.BeneficiaryName)
-                            : query.OrderBy(t => t.BeneficiaryName);
-                        break;
-                    default:
-                        query = query.OrderByDescending(t => t.Date);
-                        break;
+                    if (!Enum.TryParse<TransactionKindEnum>(kind, true, out _))
+                    {
+                        errors.Add(new ValidationError
+                        {
+                            Tag = "transaction-kind",
+                            Error = ErrorEnum.InvalidValue.ToString(),
+                            Message = $"Unsupported transaction kind '{kind}'. Valid values: {string.Join(", ", Enum.GetNames<TransactionKindEnum>())}"
+                        });
+                    }
                 }
             }
-            else
+
+           
+            
+
+            // Validate sort fields
+            if (!string.IsNullOrWhiteSpace(request.SortBy))
             {
-                query = query.OrderByDescending(t => t.Date);
+                var sortFields = request.SortBy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var field in sortFields)
+                {
+                    if (!AllowedSortFields.Contains(field.ToLower()))
+                    {
+                        errors.Add(new ValidationError
+                        {
+                            Tag = "sort-by",
+                            Error = ErrorEnum.InvalidValue.ToString(),
+                            Message = $"Unsupported sort field '{field}'. Valid fields: {string.Join(", ", AllowedSortFields)}"
+                        });
+                    }
+                }
             }
 
-            // Pagination
-            var skip = (request.Page - 1) * request.PageSize;
-            query = query.Skip(skip).Take(request.PageSize);
+            // Validate pagination
+            if (request.Page <= 0)
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "page",
+                    Error = ErrorEnum.InvalidValue.ToString(),
+                    Message = "Page must be >= 1"
+                });
+            }
 
-            return await query.ToListAsync(cancellationToken);
+            if (request.PageSize < 1 || request.PageSize > 100)
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "page-size",
+                    Error = ErrorEnum.InvalidValue.ToString(),
+                    Message = "Page size must be between 1 and 100"
+                });
+            }
+
+            if (request.StartDate.HasValue)
+            {
+                if (request.StartDate.Value > DateTime.Today)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "start-date",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Start date cannot be in the future"
+                    });
+                }
+            }
+            if (request.EndDate.HasValue)
+            {
+                if (request.EndDate.Value < new DateTime(2010, 1, 1))
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "end-date",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "End date is too far in the past"
+                    });
+                }
+            }
+
+            if (request.StartDate.HasValue && request.EndDate.HasValue)
+            {
+                if (request.StartDate.Value > request.EndDate.Value)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "date-range",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Start date cannot be after end date"
+                    });
+                }
+
+                var range = request.EndDate.Value - request.StartDate.Value;
+                if (range.TotalDays > 365)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "date-range",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = "Date range cannot exceed 365 days"
+                    });
+                }
+            }
+
+
+            return errors;
         }
     }
 }
+

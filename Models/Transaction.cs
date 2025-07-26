@@ -20,7 +20,7 @@ namespace finance_management.Models
 
         [Required]
         [Precision(18, 2)]
-        public decimal Amount { get; set; }
+        public double Amount { get; set; }
 
         
         public string? Description { get; set; }
@@ -39,6 +39,7 @@ namespace finance_management.Models
 
         // Navigation property
         public virtual Category? Category { get; set; }
+        public virtual ICollection<Split> Splits { get; set; } = new List<Split>();
 
     }
 }

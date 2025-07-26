@@ -24,14 +24,14 @@ namespace finance_management.Queries.GetSpendingAnalytics
 
         public async Task<SpendingAnalytics> Handle(GetSpendingAnalyticsQuery request, CancellationToken cancellationToken)
         {
-            // Validate the request
+            // validacija
             var validationErrors = ValidateRequest(request);
             if (validationErrors.Any())
             {
                 throw new ValidationException(validationErrors);
             }
 
-            // Check if category exists (only if catCode is provided and not null/empty)
+            // provera da li postoji catcode ako nije null u suprotnom business greska
             if (!string.IsNullOrWhiteSpace(request.CatCode))
             {
                 var exists = await _categoryRepo.ExistsAsync(request.CatCode);
@@ -48,7 +48,7 @@ namespace finance_management.Queries.GetSpendingAnalytics
                 }
             }
 
-            // Adjust end date if it's in the future (business rule)
+            // ukoliko je end date veci od danas, postavi ga na danas
             if (request.EndDate.HasValue && request.EndDate > DateTime.Today)
                 request.EndDate = DateTime.Today;
 
