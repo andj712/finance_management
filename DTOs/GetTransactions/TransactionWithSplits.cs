@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace finance_management.DTOs
+namespace finance_management.DTOs.GetTransactions
 {
-    public class TransactionWithSplitsDto
+    public class TransactionWithSplits
     {
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
@@ -35,6 +35,6 @@ namespace finance_management.DTOs
         public string? CatCode { get; set; }
 
         [JsonPropertyName("splits")]
-        public List<SplitDto> Splits { get; set; } = new();
+        public List<SingleCategorySplit> Splits { get; set; } = new();
     }
 }

@@ -1,82 +1,116 @@
 ﻿using finance_management.Database;
+using finance_management.DTOs.GetTransactions;
+using finance_management.Interfaces;
 using finance_management.Models;
 using finance_management.Models.Enums;
+using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
+using finance_management.Validations.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace finance_management.Queries.GetTransactions
 {
-    public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, List<Transaction>>
+    public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, TransactionPagedList>
     {
-        private readonly PfmDbContext _db;
-
-        public GetTransactionsQueryHandler(PfmDbContext db)
+        private readonly ITransactionRepository _repository;
+        private readonly IErrorLoggingService _errorLoggingService;
+        private static readonly string[] AllowedSortFields = {
+        "id","date","amount","beneficiary-name","description",
+        "currency","mcc-code","kind","cat-code","direction"
+        };
+        public GetTransactionsQueryHandler(ITransactionRepository repository,ErrorLoggingService errorLoggingService)
         {
-            _db = db;
+            _repository = repository;
+            _errorLoggingService = errorLoggingService;
         }
 
-        public async Task<List<Transaction>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
+        public async Task<TransactionPagedList> Handle(
+       GetTransactionsQuery request,
+       CancellationToken cancellationToken)
         {
-            var query = _db.Transactions.AsQueryable();
-
-            // Filter by transaction kind
-            if (request.TransactionKind.HasValue)
+            // 1) Validiraj request
+            var errors = Validate(request);
+            if (errors.Any())
             {
-                query = query.Where(t => t.Kind == request.TransactionKind.Value);
+                // 2) Loguj i baci exception
+                await _errorLoggingService.LogErrorsAsync(errors);
+                throw new ValidationException(errors);
             }
 
-            // Filter by date range, convert to UTC
-            if (request.StartDate.HasValue)
+            // 3) Pozovi repozitorijum i vrati rezultat
+            try
             {
-                var utcStartDate = request.StartDate.Value.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc)
-                    : request.StartDate.Value.ToUniversalTime();
-                query = query.Where(t => t.Date >= utcStartDate);
+                return await _repository.GetTransactionsAsync(request, cancellationToken);
             }
-
-            if (request.EndDate.HasValue)
+            catch (BusinessException ex)
             {
-                var utcEndDate = request.EndDate.Value.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc)
-                    : request.EndDate.Value.ToUniversalTime();
-                query = query.Where(t => t.Date <= utcEndDate);
+                await _errorLoggingService.LogBusinessErrorAsync(ex.Error, nameof(GetTransactionsQuery));
+                throw;
             }
+        }
 
-            // Sorting
-            if (!string.IsNullOrEmpty(request.SortBy))
+        private List<ValidationError> Validate(GetTransactionsQuery q)
+        {
+            var errors = new List<ValidationError>();
+
+            //transaction kind
+            if (!string.IsNullOrWhiteSpace(q.TransactionKind))
             {
-                switch (request.SortBy.ToLower())
+                foreach (var raw in q.TransactionKind
+                             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
-                    case "date":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.Date)
-                            : query.OrderBy(t => t.Date);
-                        break;
-                    case "amount":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.Amount)
-                            : query.OrderBy(t => t.Amount);
-                        break;
-                    case "beneficiaryname":
-                        query = request.SortOrder.ToLower() == "desc"
-                            ? query.OrderByDescending(t => t.BeneficiaryName)
-                            : query.OrderBy(t => t.BeneficiaryName);
-                        break;
-                    default:
-                        query = query.OrderByDescending(t => t.Date);
-                        break;
+                    if (!Enum.TryParse<TransactionKindEnum>(raw, true, out _))
+                    {
+                        errors.Add(new ValidationError
+                        {
+                            Tag = "transaction-kind",
+                            Error = ErrorEnum.InvalidValue.ToString(),
+                            Message = $"Unsupported kind '{raw}'."
+                        });
+                    }
                 }
             }
-            else
+
+            //sort-by
+            var fields = (q.SortBy ?? "date")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(f => f.ToLower());
+            foreach (var f in fields)
             {
-                query = query.OrderByDescending(t => t.Date);
+                if (!AllowedSortFields.Contains(f))
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Tag = "sort-by",
+                        Error = ErrorEnum.InvalidValue.ToString(),
+                        Message = $"Unsupported sort field '{f}'."
+                    });
+                }
             }
 
-            // Pagination
-            var skip = (request.Page - 1) * request.PageSize;
-            query = query.Skip(skip).Take(request.PageSize);
+            // page page-size range
+            if (q.Page <= 0)
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "page",
+                    Error = ErrorEnum.InvalidValue.ToString(),
+                    Message = "Page must be >= 1."
+                });
+            }
+            if (q.PageSize < 1 || q.PageSize > 100)
+            {
+                errors.Add(new ValidationError
+                {
+                    Tag = "page-size",
+                    Error = ErrorEnum.InvalidValue.ToString(),
+                    Message = "PageSize must be between 1 and 100."
+                });
+            }
 
-            return await query.ToListAsync(cancellationToken);
+            return errors;
         }
     }
 }
+

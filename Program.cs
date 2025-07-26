@@ -3,10 +3,12 @@ using DotNetEnv;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Database;
 using finance_management.Interfaces;
+using finance_management.KebabCase;
 using finance_management.Models;
 using finance_management.Repository;
 using finance_management.Services;
 using finance_management.Validations.Log;
+using finance_management.Validations.Logging;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
@@ -15,7 +17,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Office.Interop.Excel;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -26,15 +30,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
-    
+
     .AddNewtonsoftJson(options =>
     {
-        options.SerializerSettings.Converters.Add(new StringEnumConverter());
+        options.SerializerSettings.ContractResolver = new DefaultContractResolver
+        {
+            NamingStrategy = new KebabCaseNamingStrategy()
+        };
+        options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
     })
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    }); ;
+    }); 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 var connectionString = Environment.GetEnvironmentVariable("PFM_DB")

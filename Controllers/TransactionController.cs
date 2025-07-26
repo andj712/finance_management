@@ -1,9 +1,10 @@
-﻿using CsvHelper;
+﻿using AutoMapper;
+using CsvHelper;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
 using finance_management.Commands.SplitTransactions;
-using finance_management.DTOs;
 using finance_management.DTOs.CategorizeTransaction;
+using finance_management.DTOs.GetTransactions;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
 using finance_management.Validations.Errors;
@@ -23,57 +24,35 @@ namespace finance_management.Controllers
     {
    
         private readonly IMediator _mediator;
+        private IMapper _mapper;
 
-        public TransactionController(IMediator mediator)
+        public TransactionController(IMediator mediator,IMapper mapper)
         {
             
             _mediator = mediator;
+            _mapper = mapper;
         }
 
 
         [HttpGet]
-        public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQueryDTO queryDto)
+        public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQuery query)
         {
-            
             var validationResults = new List<ValidationResult>();
-            var validationContext = new ValidationContext(queryDto);
-
-            if (!Validator.TryValidateObject(queryDto, validationContext, validationResults, true))
+            var context = new ValidationContext(query);
+            if (!Validator.TryValidateObject(query, context, validationResults, true))
             {
-                foreach (var error in validationResults)
+                var errors = validationResults.Select(e => new ValidationError
                 {
-                    foreach (var memberName in error.MemberNames)
-                    {
-                        ModelState.AddModelError(memberName, error.ErrorMessage);
-                    }
-                }
+                    Tag = e.MemberNames.FirstOrDefault() ?? "unknown",
+                    Error = ErrorEnum.InvalidValue.ToString(),
+                    Message = e.ErrorMessage ?? "Validation failed"
+                }).ToList();
+
+                throw new ValidationException(errors);
             }
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                var query = new GetTransactionsQuery
-                {
-                    TransactionKind = queryDto.TransactionKind,
-                    StartDate = queryDto.StartDate,
-                    EndDate = queryDto.EndDate,
-                    Page = queryDto.Page,
-                    PageSize = queryDto.PageSize,
-                    SortBy = queryDto.SortBy,
-                    SortOrder = queryDto.SortOrder
-                };
-
-                var result = await _mediator.Send(query);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpPost("import")]

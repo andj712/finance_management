@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace finance_management.Models
 {
@@ -21,6 +22,7 @@ namespace finance_management.Models
 
         // Navigation properties
         [ForeignKey("TransactionId")]
+        [JsonIgnore]
         public virtual Transaction Transaction { get; set; }
 
         [ForeignKey("CatCode")]

@@ -93,7 +93,7 @@ namespace finance_management.Commands.SplitTransactions
 
             // da suma splitova bude jednaka iznosu transakcije
             var totalSplitAmount = request.Splits.Sum(s => s.Amount);
-            if (totalSplitAmount != transaction.Amount)
+            if (Math.Abs(totalSplitAmount - transaction.Amount)>0.01)
             {
                 throw new BusinessException(new BusinessError
                 {
