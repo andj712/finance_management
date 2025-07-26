@@ -1,0 +1,22 @@
+[
+  {
+    "catCode": "K",
+    "expectedMessage": "Transaction categorized successfully",
+    "idTransaction": "10023191"
+  },
+  {
+    "catCode": "X",
+    "expectedMessage": "Invalid category code",
+    "idTransaction": "10023191"
+  },
+  {
+    "catCode": "",
+    "expectedMessage": "catCode is required",
+    "idTransaction": "10023191"
+  },
+  {
+    "catCode": "X",
+    "expectedMessage": "idTransaction is required",
+    "idTransaction": ""
+  }
+]

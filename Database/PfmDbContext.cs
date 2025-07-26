@@ -10,6 +10,7 @@ namespace finance_management.Database
         }
 
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,13 +21,39 @@ namespace finance_management.Database
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasMaxLength(15);
                 entity.Property(e => e.Currency).HasMaxLength(3);
-                entity.Property(e => e.BeneficiaryName).HasMaxLength(30);
-                entity.Property(e => e.Description).HasMaxLength(30);
+                entity.Property(e => e.BeneficiaryName).HasMaxLength(50);
+                entity.Property(e => e.Description).HasMaxLength(50);
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 entity.Property(e => e.Direction)
                   .HasConversion<string>();
                 entity.Property(e => e.Kind)
                     .HasConversion<string>();
+                // sekundardni kljuc za CatCode
+                entity.HasOne(e => e.Category)
+                      .WithMany(e => e.Transactions)
+                      .HasForeignKey(e => e.CatCode)
+                      .HasPrincipalKey(e => e.Code)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                // indeks za bolje perfomanse
+                entity.HasIndex(e => e.CatCode);
+            });
+
+            modelBuilder.Entity<Category>(entity =>
+            {
+                entity.HasKey(e => e.Code);
+                entity.Property(e => e.Code).HasMaxLength(10).IsRequired();
+                entity.Property(e => e.Name).HasMaxLength(255).IsRequired();
+                entity.Property(e => e.ParentCode).HasMaxLength(10);
+
+                // Self-referencing relationship
+                entity.HasOne(e => e.ParentCategory)
+                      .WithMany(e => e.ChildCategories)
+                      .HasForeignKey(e => e.ParentCode)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Index on ParentCode for better performance
+                entity.HasIndex(e => e.ParentCode);
             });
         }
 

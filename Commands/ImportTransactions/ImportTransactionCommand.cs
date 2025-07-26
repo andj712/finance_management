@@ -1,7 +1,7 @@
 ﻿using finance_management.DTOs.ImportTransaction;
 using MediatR;
 
-namespace finance_management.Commands
+namespace finance_management.Commands.ImportTransactions
 {
     public class ImportTransactionsCommand : IRequest<ImportTransactionsResult>
     {

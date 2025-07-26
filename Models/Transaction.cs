@@ -22,7 +22,7 @@ namespace finance_management.Models
         [Precision(18, 2)]
         public decimal Amount { get; set; }
 
-        [MaxLength(300)]
+        
         public string? Description { get; set; }
 
         [Required]
@@ -33,6 +33,12 @@ namespace finance_management.Models
 
         [Required]
         public TransactionKindEnum Kind { get; set; }
+
+        [ForeignKey("Category")]
+        public string? CatCode { get; set; }
+
+        // Navigation property
+        public virtual Category? Category { get; set; }
 
     }
 }

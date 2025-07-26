@@ -5,6 +5,9 @@ namespace finance_management.Interfaces
 {
     public interface ITransactionService
     {
+        Task<Transaction?> GetByIdAsync(string id);
+        Task UpdateCategoryAsync(string transactionId, string catCode);
+    
         Task<List<Transaction>> GetAllTransactionsAsync(
             string? transactionKind = null,
             DateTime? startDate = null,
