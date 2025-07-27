@@ -150,6 +150,7 @@ namespace finance_management.Controllers
         [HttpPost("{id}/split")]
         public async Task<IActionResult> Split([FromRoute] string id, [FromBody] List<SingleCategorySplit> splits )
         {
+            
             try
             {
                 var command = new SplitTransactionCommand
@@ -158,7 +159,7 @@ namespace finance_management.Controllers
                     Splits = splits,
                 };
                 await _mediator.Send(command);
-                return Ok();
+                return Ok(new { message = "Transaction split successfully" });
             }
             catch (ValidationException ex)
             {
@@ -178,8 +179,8 @@ namespace finance_management.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
+        
 
-       
 
 
     }

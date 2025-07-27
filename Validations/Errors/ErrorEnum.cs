@@ -13,7 +13,8 @@ namespace finance_management.Validations.Errors
         Required,
         InvalidValue,
         CheckDigitInvalid,
-        Duplicate
+        Duplicate,
+        Invalid
     }
 
 }
