@@ -4,7 +4,7 @@ namespace finance_management.Models
 {
     public class SpendingAnalyticsInCategory
     {
-        [JsonProperty("catCode")]
+        [JsonProperty("cat-code")]
         public string CatCode { get; set; }
         [JsonProperty("amount")]
         public double Amount { get; set; }
