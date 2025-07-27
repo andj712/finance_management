@@ -15,7 +15,8 @@ namespace finance_management.Interfaces
         IQueryable<Transaction> Query();
         Task<Transaction?> GetByIdAsync(string id);
         Task UpdateCategoryAsync(string transactionId, string catCode);
-
+        Task<List<string>> GetAllIdsAsync(CancellationToken cancellationToken);
         Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery query, CancellationToken cancellationToken = default);
+        Task AddAsync(Transaction transaction);
     }
 }

@@ -59,58 +59,45 @@ namespace finance_management.Controllers
         [HttpPost("import")]
         public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionsCommand command)
         {
-            if (command?.CsvFile == null || command.CsvFile.Length == 0)
+            try
             {
-                return BadRequest(new ValidationResponse
+                if (command == null || command.CsvFile == null || command.CsvFile.Length == 0)
                 {
-                    Errors = new List<ValidationError>
-                    {
-                        new ValidationError
-                        {
-                            Tag = "file",
-                            Error = ErrorEnum.Required.ToString(),
-                            Message = "CSV file is required"
-                        }
-                    }
+                    throw new ValidationException(new List<ValidationError>
+                { new ValidationError{
+                    Tag = "file",
+                    Error = "required",
+                    Message = "CSV file is required"}
+
                 });
-            }
 
-           
-            var result = await _mediator.Send(command);
+                }
 
-            if (result.ValidationErrors.Any() && result.ImportedCount == 0)
-            {
-                return BadRequest(new ValidationResponse
+                if (!command.CsvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    Errors = result.ValidationErrors
-                });
+                    throw new ValidationException(new List<ValidationError>
+                         { new ValidationError{
+                    Tag = "file",
+                    Error = "invalid-format",
+                    Message = "File must be a CSV file"
+                } });
+                }
+
+                await _mediator.Send(command);
+                return Ok(new { message = "Import successful" });
             }
-
-            //return Ok(new
-            //{
-            //    message = "Import completed",
-            //    processedCount = result.ProcessedCount,
-            //    importedCount = result.ImportedCount,
-            //    skippedCount = result.SkippedCount,
-            //    logFileName = result.LogFileName,
-            //    errors = result.ValidationErrors
-            //});
-            //da ne bi vracao error i logfile ako je prazna lista gresaka koristila sam dictionary
-            var response = new Dictionary<string, object>
+            catch (ValidationException vex)
             {
-                ["message"] = "Import completed",
-                ["processedCount"] = result.ProcessedCount,
-                ["importedCount"] = result.ImportedCount,
-                ["skippedCount"] = result.SkippedCount,
-            };
-
-            if (result.ValidationErrors != null && result.ValidationErrors.Any())
-            {
-                response["logFileName"] = result.LogFileName;
-                response["errors"] = result.ValidationErrors;
+                return BadRequest(new ValidationResponse { Errors = vex.Errors });
             }
-
-            return Ok(response);
+            catch (BusinessException bex)
+            {
+                return StatusCode(440, new { error = bex.Error });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred during import" });
+            }
         }
 
         [HttpPost("{id}/categorize")]

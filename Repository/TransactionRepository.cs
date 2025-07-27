@@ -93,6 +93,13 @@ namespace finance_management.Repository
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<List<string>> GetAllIdsAsync(CancellationToken cancellationToken)
+        {
+            return await _context.Transactions
+                .AsNoTracking()//da bi brzi bio upit ne treba mi da pratim promene jer ne menjam 
+                .Select(t => t.Id)
+                .ToListAsync(cancellationToken);
+        }
 
         public async Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery request, CancellationToken cancellationToken)
         {

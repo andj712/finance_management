@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using CsvHelper.Configuration;
 using finance_management.Database;
 using finance_management.DTOs.ImportTransaction;
 using finance_management.Interfaces;
@@ -7,138 +8,145 @@ using finance_management.Models;
 using finance_management.Models.Enums;
 using finance_management.Services;
 using finance_management.Validations.Errors;
+using finance_management.Validations.Exceptions;
 using finance_management.Validations.Log;
 using finance_management.Validations.Logging;
 using MediatR;
 using System.Globalization;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using ValidationException = finance_management.Validations.Exceptions.ValidationException;
 
 namespace finance_management.Commands.ImportTransactions
 {
-    public class ImportTransactionsCommandHandler : IRequestHandler<ImportTransactionsCommand, ImportTransactionsResult>
+    public class ImportTransactionsCommandHandler : IRequestHandler<ImportTransactionsCommand, Unit>
     {
         private readonly ITransactionRepository _repository;
-        private readonly CsvProcessingService _csvProcessingService;
         private readonly CsvValidationService _csvValidationService;
-        private readonly ErrorLoggingService _errorLoggingService;
+        private readonly IErrorLoggingService _errorLoggingService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public ImportTransactionsCommandHandler(
             ITransactionRepository repository,
-            CsvProcessingService csvProcessingService,
             CsvValidationService csvValidationService,
-            ErrorLoggingService errorLoggingService)
+            IErrorLoggingService errorLoggingService,IUnitOfWork unitOfWork)
         {
             _repository = repository;
-            _csvProcessingService = csvProcessingService;
             _csvValidationService = csvValidationService;
             _errorLoggingService = errorLoggingService;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<ImportTransactionsResult> Handle(ImportTransactionsCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(ImportTransactionsCommand request, CancellationToken cancellationToken)
         {
-            var result = new ImportTransactionsResult();
-            var allErrors = new List<ValidationError>();
-            var skippedRows = new List<string>();
 
-            // validacija fajla
-            if (request.CsvFile == null || request.CsvFile.Length == 0)
-            {
-                result.ValidationErrors.Add(new ValidationError
-                {
-                    Tag = "file",
-                    Error = "required",
-                    Message = "CSV file is required"
-                });
-                return result;
-            }
-
-            if (!request.CsvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
-            {
-                result.ValidationErrors.Add(new ValidationError
-                {
-                    Tag = "file",
-                    Error = "invalid-format",
-                    Message = "File must be a CSV file"
-                });
-                return result;
-            }
-
+            
             try
             {
-                using var stream = request.CsvFile.OpenReadStream();
-                var (records, headers) = await _csvProcessingService.ParseCsvAsync(stream);
+            using var reader = new StreamReader(request.CsvFile.OpenReadStream());
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                BadDataFound = null,
+                MissingFieldFound = null,
+                HeaderValidated = null,
+                PrepareHeaderForMatch = args => args.Header.Trim().ToLower().Replace("-", ""),
+            };
 
-                // validacija zaglavlja
-                var headerErrors = _csvValidationService.ValidateHeaders(headers);
-                if (headerErrors.Any())
+            using var csv = new CsvReader(reader, config);
+            csv.Context.RegisterClassMap<TransactionCsvMap>();
+
+            // Procitaj sve odjednom i daj mi kao listu objekata TransactionCsvDto
+            var records = await csv.GetRecordsAsync<TransactionCsvDto>().ToListAsync(cancellationToken);
+
+            // Validacija hedera
+            var headerErrors = _csvValidationService.ValidateHeaders(csv.HeaderRecord ?? Array.Empty<string>());
+            if (headerErrors.Any())
+                throw new ValidationException(headerErrors);
+
+            var allErrors = new List<ValidationError>();
+            var validTransactions = new List<Models.Transaction>();
+            var existingIds = await _repository.GetAllIdsAsync(cancellationToken);
+            var existingIdsSet = new HashSet<string>(existingIds);
+            var csvSeenIds = new HashSet<string>();
+            
+                
+                // validacija svakog reda
+            for (int i = 0; i < records.Count; i++)
+            {
+                var rowNumber = i + 2; // zbog headera
+                var (transaction, rowErrors) = _csvValidationService.ValidateAndMapRow(records[i], rowNumber);
+
+                if (rowErrors.Any())
                 {
-                    result.ValidationErrors.AddRange(headerErrors);
-                    return result;
+                    allErrors.AddRange(rowErrors);
+                    continue;
                 }
 
-                var validTransactions = new List<Transaction>();
-                var rowNumber = 1;
+                    // provera duplikata vec u bazi 
+                    //unapredila sam da pre petlje dohvatamo sve IDjeve iz baze jednom i stavljamo ih u existingIdsSet
+                    //Unutar petlje ne zovemo više _repository.ExistsAsync(transaction.Id) jer je za svaki red pravio poseban upit 
 
-                foreach (var csvDto in records)
-                {
-                    rowNumber++;
-                    result.ProcessedCount++;
-
-                    var (transaction, rowErrors) = _csvValidationService.ValidateAndMapRow(csvDto, rowNumber);
-
-                    if (rowErrors.Any())
+                    if (existingIdsSet.Contains(transaction!.Id))
                     {
-                        allErrors.AddRange(rowErrors);
-                        skippedRows.Add($"Row {rowNumber}: {string.Join(", ", rowErrors.Select(e => e.Message))}");
-                        result.SkippedCount++;
+                    var dupErr = new ValidationError
+                    {
+                        Tag = $"id-row-{rowNumber}",
+                        Error = "Duplicate",
+                        Message = $"Transaction ID '{transaction.Id}' already exists"
+                    };
+                    allErrors.Add(dupErr);
+                    continue;
+                    }
+                    //provera duplikata u csv fajlu 
+                    if (csvSeenIds.Contains(transaction.Id))
+                    {
+                        var dupErr = new ValidationError
+                        {
+                            Tag = $"id-row-{rowNumber}",
+                            Error = "Duplicate",
+                            Message = $"Transaction ID '{transaction.Id}' is duplicated within the CSV file"
+                        };
+                        allErrors.Add(dupErr);
                         continue;
                     }
+                    csvSeenIds.Add(transaction.Id);
+                    validTransactions.Add(transaction!);
+            }
 
-                    if (transaction != null)
-                    {
-                        // provera da li vec postoji transakcija sa istim id-om
-                        if (await _repository.ExistsAsync(transaction.Id))
-                        {
-                            allErrors.Add(new ValidationError
-                            {
-                                Tag = $"id-row-{rowNumber}",
-                                Error = "duplicate",
-                                Message = $"Transaction with ID {transaction.Id} already exists"
-                            });
-                            skippedRows.Add($"Row {rowNumber}: Duplicate transaction ID {transaction.Id}");
-                            result.SkippedCount++;
-                            continue;
-                        }
+                // ukoliko ima gresaka, loguj ih
+                if (allErrors.Any())
+            {
+                await _errorLoggingService.LogErrorsAsync(allErrors, allErrors.Select(e => e.Tag).ToList());
+                //ako bas nista nije ubaceno onda moze 400, a ako je bar jedan red ubacen onda moze skip i ok da se vrati ali se loguju greske
+                if(!validTransactions.Any()) throw new ValidationException(allErrors);
+            }
 
-                        validTransactions.Add(transaction);
-                    }
-                }
+                //drugi nacin da se ubace transakcije
+                //await _repository.AddRangeAsync(validTransactions);
 
-                // import validnih transakcija
-                if (validTransactions.Any())
-                {
-                    await _repository.CreateBulkAsync(validTransactions);
-                    result.ImportedCount = validTransactions.Count;
-                }
+                //await _unitOfWork.SaveChangesAsync(cancellationToken);
+                //odlucila sam se za bulk  
+                await _repository.CreateBulkAsync(validTransactions);
 
-                // logovanje gresaka
-                if (allErrors.Any() || skippedRows.Any())
-                {
-                    result.LogFileName = await _errorLoggingService.LogErrorsAsync(allErrors, skippedRows);
-                }
-
-                result.ValidationErrors = allErrors;
-                return result;
+                return Unit.Value;
+            }
+            catch (ValidationException)
+            {
+               
+                throw;
             }
             catch (Exception ex)
             {
-                result.ValidationErrors.Add(new ValidationError
+                
+                var businessError = new BusinessError
                 {
-                    Tag = "processing",
-                    Error = "internal-error",
-                    Message = $"Error processing CSV file: {ex.Message}"
-                });
-                return result;
+                    Problem = "import-failed",
+                    Message = "Failed to import transactions",
+                    Details = ex.Message
+                };
+                await _errorLoggingService.LogBusinessErrorAsync(businessError, "ImportTransactions");
+                throw new BusinessException(businessError);
             }
         }
     }
 }
+
