@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using finance_management.AutoCategorize;
 using finance_management.Database;
 using finance_management.DTOs.GetTransactions;
 using finance_management.Interfaces;
@@ -238,7 +239,31 @@ namespace finance_management.Repository
             return orderedQuery ?? query.OrderBy(t => t.Date);
         }
 
+        public async Task<int> AutoCategorizeAsync(RulesList rulesList)
+        {
+            int totalUpdated = 0;
 
+            foreach (var rule in rulesList.Rules)
+            {
+                var sql = $"SELECT * FROM \"Transactions\" WHERE (" + rule.Predicate + ")::boolean";
+                //izvrsavam upit nad bazom koristeci FromSqlRaw
+                var transactions = await _context.Transactions
+                    .FromSqlRaw(sql)
+                    .ToListAsync();
 
+                //proveravam da li ima transakcija koje odgovaraju ovom rule i update
+                if (transactions.Any())
+                {
+                    transactions.ForEach(t => t.CatCode = rule.CatCode);
+                    _context.UpdateRange(transactions);
+                    totalUpdated += transactions.Count;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return totalUpdated;
+        }
+
+        
     }
 }

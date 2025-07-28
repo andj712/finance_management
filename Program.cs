@@ -31,10 +31,8 @@ using NetEscapades.Configuration.Yaml;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddYamlFile("auto-categorize-rules.yml", optional: false, reloadOnChange: true); 
-builder.Services.Configure<AutoCategorizationOptions>(
+
+builder.Services.Configure<RulesList>(
     builder.Configuration.GetSection("AutoCategorization"));
 builder.Services.AddControllers()
 
@@ -69,7 +67,13 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
-}); 
+});
+builder.Services.AddSingleton<IRulesProvider>(sp =>
+{
+    var env = sp.GetRequiredService<IHostEnvironment>();
+    var path = Path.Combine(env.ContentRootPath, "rules.json");
+    return new FileRulesProvider(path);
+});
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg =>

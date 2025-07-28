@@ -1,4 +1,5 @@
-﻿using finance_management.DTOs.GetTransactions;
+﻿using finance_management.AutoCategorize;
+using finance_management.DTOs.GetTransactions;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
 
@@ -18,5 +19,6 @@ namespace finance_management.Interfaces
         Task<List<string>> GetAllIdsAsync(CancellationToken cancellationToken);
         Task<TransactionPagedList> GetTransactionsAsync(GetTransactionsQuery query, CancellationToken cancellationToken = default);
         Task AddAsync(Transaction transaction);
+        Task<int> AutoCategorizeAsync(RulesList rulesList);
     }
 }
