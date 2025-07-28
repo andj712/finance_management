@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using CsvHelper;
+using finance_management.Commands.Auto_Categorize;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
 using finance_management.Commands.SplitTransactions;
 using finance_management.DTOs.CategorizeTransaction;
 using finance_management.DTOs.GetTransactions;
+using finance_management.DTOs.ImportTransaction;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
 using finance_management.Validations.Errors;
@@ -57,32 +59,39 @@ namespace finance_management.Controllers
         }
 
         [HttpPost("import")]
-        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionsCommand command)
+        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionRequest request)
         {
             try
             {
-                if (command == null || command.CsvFile == null || command.CsvFile.Length == 0)
+                var file = request.File;
+
+                if (file == null || file.Length == 0)
                 {
                     throw new ValidationException(new List<ValidationError>
-                { new ValidationError{
-                    Tag = "file",
-                    Error = "required",
-                    Message = "CSV file is required"}
+                    {
+                        new ValidationError
+                        {
+                            Tag = "file",
+                            Error = "required",
+                            Message = "CSV file is required"
+                        }
+                    });
+                        }
 
-                });
-
-                }
-
-                if (!command.CsvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new ValidationException(new List<ValidationError>
-                         { new ValidationError{
-                    Tag = "file",
-                    Error = "invalid-format",
-                    Message = "File must be a CSV file"
-                } });
-                }
+                            throw new ValidationException(new List<ValidationError>
+                    {
+                        new ValidationError
+                        {
+                            Tag = "file",
+                            Error = "invalid-format",
+                            Message = "File must be a CSV file"
+                        }
+                    });
+                        }
 
+                var command = new ImportTransactionsCommand { CsvFile = file };
                 await _mediator.Send(command);
                 return Ok(new { message = "Import successful" });
             }
@@ -166,9 +175,14 @@ namespace finance_management.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
+
+        [HttpPost("auto-categorize")]
+        public async Task<IActionResult> AutoCategorize()
+        {
+            var categorizedCount = await _mediator.Send(new AutoCategorizeTransactionCommand());
+            return Ok(new { categorized = categorizedCount });
+        }
         
-
-
 
     }
 

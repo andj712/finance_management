@@ -1,5 +1,6 @@
 using AutoMapper;
 using DotNetEnv;
+using finance_management.AutoCategorize;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Database;
 using finance_management.Interfaces;
@@ -14,6 +15,7 @@ using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Office.Interop.Excel;
 using Microsoft.OpenApi.Models;
@@ -22,13 +24,18 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using NetEscapades.Configuration.Yaml;
+
 
 
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddYamlFile("auto-categorize-rules.yml", optional: false, reloadOnChange: true); 
+builder.Services.Configure<AutoCategorizationOptions>(
+    builder.Configuration.GetSection("AutoCategorization"));
 builder.Services.AddControllers()
 
     .AddNewtonsoftJson(options =>
