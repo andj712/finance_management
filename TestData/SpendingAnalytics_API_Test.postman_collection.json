@@ -974,7 +974,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5000",
+      "value": "http://localhost:7263",
       "type": "string",
       "description": "Base URL for the API"
     }

@@ -1,0 +1,54 @@
+﻿services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: pfm-postgres
+    environment:
+      POSTGRES_DB: pfm_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pfm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pfm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Finance Management API
+  finance-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: pfm-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - PFM_DB=Host=postgres;Port=5432;Database=pfm_db;Username=postgres;Password=postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Logs:/app/Logs   # Mapiranje lokalnog Logs foldera
+    networks:
+      - pfm-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  pfm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

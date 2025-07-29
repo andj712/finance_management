@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using DotNetEnv;
 using finance_management.AutoCategorize;
 using finance_management.Commands.CategorizeSingleTransaction;
@@ -49,7 +49,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    }); 
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 var connectionString = Environment.GetEnvironmentVariable("PFM_DB")
@@ -77,14 +77,14 @@ builder.Services.AddSingleton<IRulesProvider>(sp =>
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(CategorizeTransactionCommandHandler).Assembly)); 
+    cfg.RegisterServicesFromAssembly(typeof(CategorizeTransactionCommandHandler).Assembly));
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IErrorLoggingService, ErrorLoggingService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ICategoryService, CategoryService>(); 
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISplitRepository, SplitRepository>();
 builder.Services.AddScoped<CsvValidationService>();
 builder.Services.AddScoped<ErrorLoggingService>();
@@ -96,15 +96,16 @@ builder.Services.AddScoped<SpendingAnalyticsErrorLoggingService>();
 
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.ApplyMigrations();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

@@ -12,7 +12,7 @@ using finance_management.Database;
 namespace finance_management.Migrations
 {
     [DbContext(typeof(PfmDbContext))]
-    [Migration("20250722092411_InitialCreate")]
+    [Migration("20250729152214_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -48,15 +48,36 @@ namespace finance_management.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("finance_management.Models.Split", b =>
+                {
+                    b.Property<string>("TransactionId")
+                        .HasColumnType("character varying(15)")
+                        .HasColumnOrder(0);
+
+                    b.Property<string>("CatCode")
+                        .HasColumnType("character varying(10)")
+                        .HasColumnOrder(1);
+
+                    b.Property<double>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("double precision");
+
+                    b.HasKey("TransactionId", "CatCode");
+
+                    b.HasIndex("CatCode");
+
+                    b.ToTable("Splits");
+                });
+
             modelBuilder.Entity("finance_management.Models.Transaction", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(15)
                         .HasColumnType("character varying(15)");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<double>("Amount")
                         .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
+                        .HasColumnType("double precision");
 
                     b.Property<string>("BeneficiaryName")
                         .HasMaxLength(50)
@@ -105,6 +126,25 @@ namespace finance_management.Migrations
                     b.Navigation("ParentCategory");
                 });
 
+            modelBuilder.Entity("finance_management.Models.Split", b =>
+                {
+                    b.HasOne("finance_management.Models.Category", "Category")
+                        .WithMany("Splits")
+                        .HasForeignKey("CatCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("finance_management.Models.Transaction", "Transaction")
+                        .WithMany("Splits")
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Transaction");
+                });
+
             modelBuilder.Entity("finance_management.Models.Transaction", b =>
                 {
                     b.HasOne("finance_management.Models.Category", "Category")
@@ -119,7 +159,14 @@ namespace finance_management.Migrations
                 {
                     b.Navigation("ChildCategories");
 
+                    b.Navigation("Splits");
+
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("finance_management.Models.Transaction", b =>
+                {
+                    b.Navigation("Splits");
                 });
 #pragma warning restore 612, 618
         }

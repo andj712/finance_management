@@ -7,7 +7,17 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://localhost:7001",
+      "value": "{{baseUrl}}",
+      "type": "string"
+    },
+    {
+      "key": "transactionSchema",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\"total-count\", \"page-size\", \"page\", \"total-pages\", \"sort-order\", \"sort-by\", \"items\"],\n  \"properties\": {\n    \"total-count\": { \"type\": \"number\" },\n    \"page-size\": { \"type\": \"number\" },\n    \"page\": { \"type\": \"number\" },\n    \"total-pages\": { \"type\": \"number\" },\n    \"sort-order\": { \"type\": \"string\" },\n    \"sort-by\": { \"type\": \"string\" },\n    \"items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"id\", \"date\", \"direction\", \"amount\", \"currency\", \"kind\", \"splits\"],\n        \"properties\": {\n          \"id\": { \"type\": \"string\" },\n          \"date\": { \"type\": \"string\" },\n          \"direction\": { \"type\": \"string\" },\n          \"amount\": { \"type\": \"number\" },\n          \"currency\": { \"type\": \"string\" },\n          \"kind\": { \"type\": \"string\" },\n          \"splits\": { \"type\": \"array\" }\n        }\n      }\n    }\n  }\n}",
+      "type": "string"
+    },
+    {
+      "key": "errorSchema",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\"errors\"],\n  \"properties\": {\n    \"errors\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"tag\", \"error\", \"message\"],\n        \"properties\": {\n          \"tag\": { \"type\": \"string\" },\n          \"error\": { \"type\": \"string\" },\n          \"message\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}",
       "type": "string"
     }
   ],
@@ -40,36 +50,21 @@
                   "// Parse response",
                   "const responseJson = pm.response.json();",
                   "",
-                  "// Test response schema",
-                  "pm.test(\"Response has correct schema\", function () {",
-                  "    pm.expect(responseJson).to.have.property('total-count').that.is.a('number');",
-                  "    pm.expect(responseJson).to.have.property('page-size').that.is.a('number');",
-                  "    pm.expect(responseJson).to.have.property('page').that.is.a('number');",
-                  "    pm.expect(responseJson).to.have.property('total-pages').that.is.a('number');",
-                  "    pm.expect(responseJson).to.have.property('sort-order').that.is.a('string');",
-                  "    pm.expect(responseJson).to.have.property('sort-by').that.is.a('string');",
-                  "    pm.expect(responseJson).to.have.property('items').that.is.an('array');",
+                  "// Get schema from collection variable",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "// Validate response against schema using tv4",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
                   "});",
                   "",
                   "// Test default pagination values",
                   "pm.test(\"Default pagination values are correct\", function () {",
                   "    pm.expect(responseJson['page']).to.equal(1);",
                   "    pm.expect(responseJson['page-size']).to.equal(10);",
-                  "});",
-                  "",
-                  "// Test transaction item schema if items exist",
-                  "if (responseJson.items && responseJson.items.length > 0) {",
-                  "    pm.test(\"Transaction items have correct schema\", function () {",
-                  "        const firstItem = responseJson.items[0];",
-                  "        pm.expect(firstItem).to.have.property('id').that.is.a('string');",
-                  "        pm.expect(firstItem).to.have.property('date').that.is.a('string');",
-                  "        pm.expect(firstItem).to.have.property('direction').that.is.a('string');",
-                  "        pm.expect(firstItem).to.have.property('amount').that.is.a('number');",
-                  "        pm.expect(firstItem).to.have.property('currency').that.is.a('string');",
-                  "        pm.expect(firstItem).to.have.property('kind').that.is.a('string');",
-                  "        pm.expect(firstItem).to.have.property('splits').that.is.an('array');",
-                  "    });",
-                  "}"
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -80,8 +75,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"]
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ]
             }
           }
         },
@@ -97,6 +92,15 @@
                   "});",
                   "",
                   "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
                   "",
                   "pm.test(\"Pagination parameters are correct\", function () {",
                   "    pm.expect(responseJson['page']).to.equal(2);",
@@ -116,8 +120,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?page=2&page-size=5",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "page",
@@ -144,15 +148,20 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
-                  "pm.test(\"Response has correct schema\", function () {",
-                  "    pm.expect(responseJson).to.have.property('items').that.is.an('array');",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
                   "});",
                   "",
                   "// Test that returned transactions are within date range",
                   "if (responseJson.items && responseJson.items.length > 0) {",
                   "    pm.test(\"Transactions are within specified date range\", function () {",
-                  "        const startDate = new Date('2023-01-01');",
-                  "        const endDate = new Date('2023-12-31');",
+                  "        const startDate = new Date('2021-01-01');",
+                  "        const endDate = new Date('2021-12-31');",
                   "        ",
                   "        responseJson.items.forEach(item => {",
                   "            const transactionDate = new Date(item.date);",
@@ -170,17 +179,17 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/transactions?start-date=2023-01-01&end-date=2023-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "raw": "{{baseUrl}}/transactions?start-date=2021-01-01&end-date=2021-12-31",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "start-date",
-                  "value": "2023-01-01"
+                  "value": "2021-01-01"
                 },
                 {
                   "key": "end-date",
-                  "value": "2023-12-31"
+                  "value": "2021-12-31"
                 }
               ]
             }
@@ -198,6 +207,15 @@
                   "});",
                   "",
                   "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
                   "",
                   "// Test that returned transactions have correct kind",
                   "if (responseJson.items && responseJson.items.length > 0) {",
@@ -218,8 +236,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?transaction-kind=dep,wdw",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "transaction-kind",
@@ -241,6 +259,15 @@
                   "});",
                   "",
                   "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
                   "",
                   "pm.test(\"Sort parameters are correct\", function () {",
                   "    pm.expect(responseJson['sort-by']).to.equal('amount');",
@@ -265,8 +292,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?sort-by=amount&sort-order=desc",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "sort-by",
@@ -302,9 +329,13 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
-                  "pm.test(\"Response has validation error structure\", function () {",
-                  "    pm.expect(responseJson).to.have.property('errors').that.is.an('array');",
-                  "    pm.expect(responseJson.errors.length).to.be.greaterThan(0);",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
                   "});",
                   "",
                   "pm.test(\"Error message contains page validation\", function () {",
@@ -323,8 +354,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?page=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "page",
@@ -347,6 +378,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains page-size validation\", function () {",
                   "    const pageSizeError = responseJson.errors.find(err => err.tag === 'page-size');",
                   "    pm.expect(pageSizeError).to.not.be.undefined;",
@@ -363,8 +403,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?page-size=101",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "page-size",
@@ -387,6 +427,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains transaction-kind validation\", function () {",
                   "    const kindError = responseJson.errors.find(err => err.tag === 'transaction-kind');",
                   "    pm.expect(kindError).to.not.be.undefined;",
@@ -403,8 +452,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?transaction-kind=invalid",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "transaction-kind",
@@ -427,6 +476,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains sort-by validation\", function () {",
                   "    const sortError = responseJson.errors.find(err => err.tag === 'sort-by');",
                   "    pm.expect(sortError).to.not.be.undefined;",
@@ -443,8 +501,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?sort-by=invalid-field",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "sort-by",
@@ -467,6 +525,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains start-date validation\", function () {",
                   "    const dateError = responseJson.errors.find(err => err.tag === 'start-date');",
                   "    pm.expect(dateError).to.not.be.undefined;",
@@ -483,8 +550,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?start-date=2030-01-01",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "start-date",
@@ -507,6 +574,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains date-range validation\", function () {",
                   "    const rangeError = responseJson.errors.find(err => err.tag === 'date-range');",
                   "    pm.expect(rangeError).to.not.be.undefined;",
@@ -522,17 +598,17 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/transactions?start-date=2023-12-31&end-date=2023-01-01",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "raw": "{{baseUrl}}/transactions?start-date=2021-12-31&end-date=2021-01-01",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "start-date",
-                  "value": "2023-12-31"
+                  "value": "2021-12-31"
                 },
                 {
                   "key": "end-date",
-                  "value": "2023-01-01"
+                  "value": "2021-01-01"
                 }
               ]
             }
@@ -551,6 +627,15 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
                   "pm.test(\"Error message contains date-range validation\", function () {",
                   "    const rangeError = responseJson.errors.find(err => err.tag === 'date-range');",
                   "    pm.expect(rangeError).to.not.be.undefined;",
@@ -567,8 +652,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?start-date=2022-01-01&end-date=2023-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "start-date",
@@ -600,10 +685,13 @@
                   "",
                   "const responseJson = pm.response.json();",
                   "",
-                  "pm.test(\"Response has correct schema for empty result\", function () {",
-                  "    pm.expect(responseJson).to.have.property('items').that.is.an('array');",
-                  "    pm.expect(responseJson).to.have.property('total-count').that.is.a('number');",
-                  "    pm.expect(responseJson).to.have.property('total-pages').that.is.a('number');",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
                   "});",
                   "",
                   "pm.test(\"Empty result has zero total count\", function () {",
@@ -621,17 +709,17 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/transactions?start-date=1900-01-01&end-date=1900-01-02",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "raw": "{{baseUrl}}/transactions?start-date=2024-01-01&end-date=2024-01-02",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "start-date",
-                  "value": "1900-01-01"
+                  "value": "2024-01-01"
                 },
                 {
                   "key": "end-date",
-                  "value": "1900-01-02"
+                  "value": "2024-01-02"
                 }
               ]
             }
@@ -667,8 +755,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transactions?page-size=100",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
               "query": [
                 {
                   "key": "page-size",

@@ -57,6 +57,7 @@ namespace finance_management.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return StatusCode(500, new { message = "An error occurred while processing the request" });
             }
         }
