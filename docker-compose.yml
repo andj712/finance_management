@@ -20,6 +20,22 @@
       retries: 10
       start_period: 20s
 
+  # Redis Cache
+  redis:
+    image: redis:7.2
+    container_name: pfm-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pfm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Finance Management API
   finance-api:
     build: 
@@ -29,14 +45,18 @@
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - PFM_DB=Host=postgres;Port=5432;Database=pfm_db;Username=postgres;Password=postgres
+      - REDIS_CONNECTION=redis:6379
+      - RUNNING_IN_DOCKER=true
     ports:
       - "8080:8080"
     volumes:
-      - ./Logs:/app/Logs   # Mapiranje lokalnog Logs foldera
+      - ./Logs:/app/Logs
     networks:
       - pfm-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -52,3 +72,4 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:

@@ -68,6 +68,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
 });
+//var runningInDocker = Environment.GetEnvironmentVariable("RUNNING_IN_DOCKER") == "true";
+//var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION")
+//    ?? (runningInDocker ? "redis:6379" : "localhost:6379");
+//builder.Services.AddSingleton(new RedisService(redisConnection));
+var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION") ?? "localhost:6379";
+builder.Services.AddSingleton<IRedisService>(new RedisService(redisConnection));
+
 builder.Services.AddSingleton<IRulesProvider>(sp =>
 {
     var env = sp.GetRequiredService<IHostEnvironment>();
