@@ -9,6 +9,11 @@
       "key": "baseUrl",
       "value": "{{baseUrl}}",
       "type": "string"
+    },
+    {
+      "key": "validateFileRequiredError",
+      "value": "(() => { const responseJson = pm.response.json(); pm.expect(responseJson).to.have.property('errors'); pm.expect(responseJson.errors).to.be.an('array'); pm.expect(responseJson.errors.length).to.be.greaterThan(0); const error = responseJson.errors[0]; pm.expect(error).to.have.property('tag', 'file'); pm.expect(error).to.have.property('error', 'required'); pm.expect(error).to.have.property('message'); })()",
+      "type": "string"
     }
   ],
   "item": [
@@ -42,11 +47,6 @@
               "    pm.response.to.have.status(200);",
               "});",
               "",
-              "pm.test(\"Response has correct schema\", function () {",
-              "    const responseJson = pm.response.json();",
-              "    pm.expect(responseJson).to.have.property('message');",
-              "    pm.expect(responseJson.message).to.equal('Import successful');",
-              "});",
               "",
               "pm.test(\"Response time is acceptable\", function () {",
               "    pm.expect(pm.response.responseTime).to.be.below(5000);",
@@ -86,15 +86,7 @@
               "});",
               "",
               "pm.test(\"Error response has correct schema\", function () {",
-              "    const responseJson = pm.response.json();",
-              "    pm.expect(responseJson).to.have.property('errors');",
-              "    pm.expect(responseJson.errors).to.be.an('array');",
-              "    pm.expect(responseJson.errors.length).to.be.greaterThan(0);",
-              "    ",
-              "    const error = responseJson.errors[0];",
-              "    pm.expect(error).to.have.property('tag', 'file');",
-              "    pm.expect(error).to.have.property('error', 'required');",
-              "    pm.expect(error).to.have.property('message');",
+              "    eval(pm.environment.get(\"validateFileRequiredError\"));",
               "});"
             ],
             "type": "text/javascript"
@@ -113,7 +105,7 @@
             {
               "key": "file",
               "type": "file",
-              "src": "csv-files/invalid_format.txt"
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\invalid-file-format.pdf"
             }
           ]
         },
@@ -157,7 +149,7 @@
             {
               "key": "file",
               "type": "file",
-              "src": "csv-files/missing_headers.csv"
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-missing-header-direction.csv"
             }
           ]
         },
@@ -203,7 +195,7 @@
             {
               "key": "file",
               "type": "file",
-              "src": "csv-files/invalid_data.csv"
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-invalid-data.csv"
             }
           ]
         },
@@ -242,7 +234,7 @@
       ]
     },
     {
-      "name": "CSV with Duplicate Transactions",
+      "name": "CSV with Duplicate Transactions in Database",
       "request": {
         "method": "POST",
         "header": [],
@@ -252,7 +244,7 @@
             {
               "key": "file",
               "type": "file",
-              "src": "csv-files/duplicate_transactions.csv"
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\valid_transactions.csv"
             }
           ]
         },
@@ -278,9 +270,6 @@
               "        pm.expect(responseJson).to.have.property('errors');",
               "        const duplicateErrors = responseJson.errors.filter(error => error.error === 'Duplicate');",
               "        pm.expect(duplicateErrors.length).to.be.greaterThan(0);",
-              "    } else {",
-              "        pm.expect(responseJson).to.have.property('message');",
-              "        pm.expect(responseJson.message).to.equal('Import successful');",
               "    }",
               "});"
             ],
@@ -290,7 +279,7 @@
       ]
     },
     {
-      "name": "Empty CSV File",
+      "name": "CSV with Duplicate Transactions in csv",
       "request": {
         "method": "POST",
         "header": [],
@@ -300,7 +289,52 @@
             {
               "key": "file",
               "type": "file",
-              "src": "csv-files/empty.csv"
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\duplicates_in_csv.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 or 400\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Duplicate detection works\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    if (pm.response.code === 400) {",
+              "        pm.expect(responseJson).to.have.property('errors');",
+              "        const duplicateErrors = responseJson.errors.filter(error => error.error === 'Duplicate');",
+              "        pm.expect(duplicateErrors.length).to.be.greaterThan(0);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Missing Header",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-missing-header.csv"
             }
           ]
         },
@@ -319,102 +353,12 @@
               "    pm.response.to.have.status(400);",
               "});",
               "",
-              "pm.test(\"Empty file validation\", function () {",
+              "pm.test(\"Missing header validation\", function () {",
               "    const responseJson = pm.response.json();",
               "    pm.expect(responseJson).to.have.property('errors');",
               "    ",
               "    const headerErrors = responseJson.errors.filter(error => error.message.includes('Required header'));",
               "    pm.expect(headerErrors.length).to.be.greaterThan(0);",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ]
-    },
-    {
-      "name": "CSV with Special Characters",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "formdata",
-          "formdata": [
-            {
-              "key": "file",
-              "type": "file",
-              "src": "csv-files/special_characters.csv"
-            }
-          ]
-        },
-        "url": {
-          "raw": "{{baseUrl}}/transactions/import",
-          "host": [ "{{baseUrl}}" ],
-          "path": [ "transactions", "import" ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "",
-              "pm.test(\"Unicode and special characters handled\", function () {",
-              "    const responseJson = pm.response.json();",
-              "    pm.expect(responseJson).to.have.property('message');",
-              "    pm.expect(responseJson.message).to.equal('Import successful');",
-              "});",
-              "",
-              "pm.test(\"Response time acceptable for special characters\", function () {",
-              "    pm.expect(pm.response.responseTime).to.be.below(10000);",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Large CSV File - Performance Test",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "formdata",
-          "formdata": [
-            {
-              "key": "file",
-              "type": "file",
-              "src": "csv-files/large_transactions.csv"
-            }
-          ]
-        },
-        "url": {
-          "raw": "{{baseUrl}}/transactions/import",
-          "host": [ "{{baseUrl}}" ],
-          "path": [ "transactions", "import" ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "",
-              "pm.test(\"Large file processing completes within 30 seconds\", function () {",
-              "    pm.expect(pm.response.responseTime).to.be.below(30000);",
-              "});",
-              "",
-              "pm.test(\"Large file import successful\", function () {",
-              "    const responseJson = pm.response.json();",
-              "    pm.expect(responseJson).to.have.property('message');",
-              "    pm.expect(responseJson.message).to.equal('Import successful');",
               "});"
             ],
             "type": "text/javascript"

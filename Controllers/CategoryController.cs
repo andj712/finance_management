@@ -1,5 +1,6 @@
 ﻿using finance_management.Commands;
 using finance_management.Commands.ImportCategories;
+using finance_management.DTOs;
 using finance_management.DTOs.ImportCategory;
 using finance_management.Interfaces;
 using finance_management.Queries.GetCategories;
@@ -33,6 +34,7 @@ namespace finance_management.Controllers
         {
             try
             {
+                
                 if ( command?.File == null || command.File.Length == 0)
                 {
                     return BadRequest(new ValidationResponse
@@ -48,13 +50,13 @@ namespace finance_management.Controllers
                         }
                     });
                 }
-
+                
                 var result = await _mediator.Send(command);
 
                 var deleted = await _redis.RemoveKeysByPatternAsync("categories:parent:*");
                 Console.WriteLine($"Removed {deleted} category parent keys from Redis");
 
-                return Ok(new { categories = result });
+                return Ok();
 
             }
             catch (ValidationException ex)
@@ -84,15 +86,15 @@ namespace finance_management.Controllers
                 if (cached is not null)
                 {
                     Console.WriteLine("From Redis");
-                    return Ok(new { categories = cached });
+                    return Ok(new GetCategoriesResult { items = cached });
                 }
 
                 var query = new GetCategoriesQuery { ParentId = parentId };
                 var result = await _mediator.Send(query);
-
+                
                 await _redis.SetObjectAsync(redisKey, result, TimeSpan.FromMinutes(30));
-
-                return Ok(new { categories = result });
+                
+                return Ok(new GetCategoriesResult { items=result});
             }
             catch (ValidationException ex)
             {

@@ -17,7 +17,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"cat-code\": \"B\"\n}"
+          "raw": "{\n  \"catcode\": \"B\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/transactions/15267535/categorize",
@@ -51,28 +51,8 @@
               "    const contentType = pm.response.headers.get(\"Content-Type\");",
               "    pm.expect(contentType).to.not.be.undefined;",
               "    pm.expect(contentType).to.include(\"application/json\");",
-              "});",
-              "",
-              "// Schema validation",
-              "pm.test(\"Response schema validation\", function () {",
-              "    pm.expect(pm.response.text()).to.not.be.empty;",
-              "    ",
-              "    const responseJson = pm.response.json();",
-              "    pm.expect(responseJson).to.be.an('object');",
-              "    pm.expect(responseJson).to.have.property('message');",
-              "    pm.expect(responseJson.message).to.be.a('string');",
-              "    pm.expect(responseJson.message).to.eql('Transaction categorized successfully');",
-              "});",
-              "",
-              "// Business logic validation",
-              "pm.test(\"Success message is correct\", function () {",
-              "    if (pm.response.text() && pm.response.text().length > 0) {",
-              "        const responseJson = pm.response.json();",
-              "        pm.expect(responseJson.message).to.include('successfully');",
-              "    } else {",
-              "        pm.test.skip('Response body is empty');",
-              "    }",
               "});"
+             
             ]
           }
         }
@@ -90,7 +70,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"cat-code\": \"\"\n}"
+          "raw": "{\n  \"catcode\": \"\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/transactions/15267535/categorize",
@@ -146,7 +126,7 @@
               "pm.test(\"Error is about required category code\", function () {",
               "    const responseJson = pm.response.json();",
               "    const error = responseJson.errors[0];",
-              "    pm.expect(error.tag).to.eql('cat-code');",
+              "    pm.expect(error.tag).to.eql('catcode');",
               "    pm.expect(error.error).to.eql('Required');",
               "    pm.expect(error.message).to.include('required');",
               "});"
@@ -235,7 +215,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"cat-code\": \"B\"\n}"
+          "raw": "{\n  \"catcode\": \"B\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/transactions/99999999999/categorize",
@@ -306,7 +286,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"cat-code\": \"NONEXISTENT\"\n}"
+          "raw": "{\n  \"catcode\": \"NONEXISTENT\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/transactions/15267535/categorize",
@@ -377,7 +357,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"cat-code\": null\n}"
+          "raw": "{\n  \"catcode\": null\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/transactions/15267535/categorize",
@@ -412,7 +392,7 @@
               "pm.test(\"Handles null category code\", function () {",
               "    const responseJson = pm.response.json();",
               "    const hasRequiredError = responseJson.errors.some(error => ",
-              "        error.tag === 'cat-code' && error.error === 'Required'",
+              "        error.tag === 'catcode' && error.error === 'Required'",
               "    );",
               "    pm.expect(hasRequiredError).to.be.true;",
               "});"

@@ -34,17 +34,27 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<RulesList>(
     builder.Configuration.GetSection("AutoCategorization"));
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontendDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Angular dev server
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 builder.Services.AddControllers()
 
-    .AddNewtonsoftJson(options =>
-    {
-        options.SerializerSettings.ContractResolver = new DefaultContractResolver
-        {
-            NamingStrategy = new KebabCaseNamingStrategy()
-        };
-        options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-        options.SerializerSettings.Converters.Add(new StringEnumConverter());
-    })
+    //.AddNewtonsoftJson(options =>
+    //{
+    //    options.SerializerSettings.ContractResolver = new DefaultContractResolver
+    //    {
+    //        NamingStrategy = new KebabCaseNamingStrategy()
+    //    };
+    //    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+    //    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+    //})
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
@@ -59,14 +69,11 @@ builder.Services.AddDbContext<PfmDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
 
+
 //da iskljucim automatsku validaciju
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
-});
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.PropertyNamingPolicy = new KebabCaseNamingPolicy();
 });
 //var runningInDocker = Environment.GetEnvironmentVariable("RUNNING_IN_DOCKER") == "true";
 //var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION")
@@ -89,7 +96,6 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IErrorLoggingService, ErrorLoggingService>();
-builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISplitRepository, SplitRepository>();
@@ -113,6 +119,8 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("AllowFrontendDev");
 
 app.UseAuthorization();
 

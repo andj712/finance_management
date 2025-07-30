@@ -33,7 +33,9 @@ namespace finance_management.Controllers
             _mediator = mediator;
         }
 
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpGet]
         public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQuery query)
         {
@@ -57,7 +59,9 @@ namespace finance_management.Controllers
 
  
         }
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpPost("import")]
         public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionRequest request)
         {
@@ -89,11 +93,11 @@ namespace finance_management.Controllers
                             Message = "File must be a CSV file"
                         }
                     });
-                        }
+                }
 
                 var command = new ImportTransactionsCommand { CsvFile = file };
                 await _mediator.Send(command);
-                return Ok(new { message = "Import successful" });
+                return Ok();
             }
             catch (ValidationException vex)
             {
@@ -108,35 +112,73 @@ namespace finance_management.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred during import" });
             }
         }
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/categorize")]
         public async Task<IActionResult> CategorizeTransaction([FromRoute] string id, [FromBody] CategorizeTransactionRequest request)
         {
-            var command = new CategorizeTransactionCommand
-            {
-                TransactionId = id,
-                CatCode = request.CatCode
-            };
-
-            var result = await _mediator.Send(command);
-
-            if (result.ValidationErrors.Any())
-            {
-                return BadRequest(new ValidationResponse
+            try{ 
+               
+                if (request == null || string.IsNullOrWhiteSpace(request.CatCode))
                 {
-                    Errors = result.ValidationErrors
-                });
-            }
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "catcode",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Category code is required"
+                            }
 
-            if (result.BusinessError != null)
-            {
-                return StatusCode(440, result.BusinessError);
-            }
+                   });
+                }
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
 
-            return Ok(new
+                   });
+                }
+                var command = new CategorizeTransactionCommand
+                {
+                    TransactionId = id,
+                    CatCode = request.CatCode
+                };
+
+                var result = await _mediator.Send(command);
+
+                if (result.ValidationErrors.Any())
+                {
+                    return BadRequest(new ValidationResponse
+                    {
+                        Errors = result.ValidationErrors
+                    });
+                }
+
+                if (result.BusinessError != null)
+                {
+                    return StatusCode(440, result.BusinessError);
+                }
+
+                return Ok();
+        }
+             catch (ValidationException vex)
             {
-                message = "Transaction categorized successfully"
-            });
+                return BadRequest(new ValidationResponse { Errors = vex.Errors });
+            }
+            catch (BusinessException bex)
+            {
+                return StatusCode(440, new { error = bex.Error });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred during import" });
+            }
         }
 
 
@@ -144,16 +186,14 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] List<SingleCategorySplit> splits )
+        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] SplitTransactionCommand command)
         {
-            
+
             try
             {
-                var command = new SplitTransactionCommand
-                {
-                    TransactionId = id,
-                    Splits = splits,
-                };
+                
+                command.TransactionId = id;
+                
                 await _mediator.Send(command);
                 return Ok(new { message = "Transaction split successfully" });
             }
