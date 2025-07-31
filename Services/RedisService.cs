@@ -15,8 +15,16 @@ namespace finance_management.Services
 
         public RedisService(string redisConnectionString = "localhost:6379")
         {
-            _redis = ConnectionMultiplexer.Connect(redisConnectionString);
-            _db = _redis.GetDatabase();
+            try
+            {
+                _redis = ConnectionMultiplexer.Connect(redisConnectionString);
+                _db = _redis.GetDatabase();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine("problem with redis connection");
+            }
         }
 
         public async Task SetAsync(string key, string value, TimeSpan? expiry = null)

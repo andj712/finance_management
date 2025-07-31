@@ -75,7 +75,7 @@ namespace finance_management.Queries.GetTransactions
            
             
 
-            // Validate sort fields
+            // Validiraj sort 
             if (!string.IsNullOrWhiteSpace(request.SortBy))
             {
                 var sortFields = request.SortBy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -93,7 +93,7 @@ namespace finance_management.Queries.GetTransactions
                 }
             }
 
-            // Validate pagination
+            // Validacija paginacije
             if (request.Page <= 0)
             {
                 errors.Add(new ValidationError

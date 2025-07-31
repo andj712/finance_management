@@ -97,7 +97,7 @@ namespace finance_management.Controllers
 
                 var command = new ImportTransactionsCommand { CsvFile = file };
                 await _mediator.Send(command);
-                return Ok();
+                return Ok(new { message = "Import successful" });
             }
             catch (ValidationException vex)
             {
@@ -191,7 +191,32 @@ namespace finance_management.Controllers
 
             try
             {
-                
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
+
+                   });
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
+
+                   });
+                }
+
                 command.TransactionId = id;
                 
                 await _mediator.Send(command);

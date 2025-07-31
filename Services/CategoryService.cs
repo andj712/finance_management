@@ -58,6 +58,28 @@ namespace finance_management.Services
                 BadDataFound = null,
                 TrimOptions = TrimOptions.Trim
             });
+            //prvi red samo procita
+            csv.Read();
+            //setuj se na prvi red
+            csv.ReadHeader();
+
+            var expectedHeaders = new[] { "code", "parent-code", "name" };
+            var actualHeaders = csv.HeaderRecord?.Select(h => h.Trim().ToLower()).ToList() ?? new List<string>();
+
+            var missingHeaders = expectedHeaders
+                .Where(h => !actualHeaders.Contains(h))
+                .ToList();
+
+            if (missingHeaders.Any())
+            {
+                throw new ValidationException(missingHeaders.Select(h => new ValidationError
+                {
+                    Tag = "header",
+                    Error = ErrorEnum.InvalidFormat.ToString(),
+                    Message = $"Missing header: {h}"
+                }).ToList());
+            }
+
             //custom mapiranje 
             csv.Context.RegisterClassMap<CategoryCsvMap>();
             var records = csv.GetRecords<CategoryDto>().ToList();
