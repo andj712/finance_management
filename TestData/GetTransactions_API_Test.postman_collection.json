@@ -1,0 +1,763 @@
+{
+  "info": {
+    "name": "GetTransactions API Tests",
+    "description": "Comprehensive test suite for the GetTransactions endpoint",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{baseUrl}}",
+      "type": "string"
+    },
+    {
+      "key": "transactionSchema",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\"total-count\", \"page-size\", \"page\", \"total-pages\", \"sort-order\", \"sort-by\", \"items\"],\n  \"properties\": {\n    \"total-count\": { \"type\": \"number\" },\n    \"page-size\": { \"type\": \"number\" },\n    \"page\": { \"type\": \"number\" },\n    \"total-pages\": { \"type\": \"number\" },\n    \"sort-order\": { \"type\": \"string\" },\n    \"sort-by\": { \"type\": \"string\" },\n    \"items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"id\", \"date\", \"direction\", \"amount\", \"currency\", \"kind\", \"splits\"],\n        \"properties\": {\n          \"id\": { \"type\": \"string\" },\n          \"date\": { \"type\": \"string\" },\n          \"direction\": { \"type\": \"string\" },\n          \"amount\": { \"type\": \"number\" },\n          \"currency\": { \"type\": \"string\" },\n          \"kind\": { \"type\": \"string\" },\n          \"splits\": { \"type\": \"array\" }\n        }\n      }\n    }\n  }\n}",
+      "type": "string"
+    },
+    {
+      "key": "errorSchema",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\"errors\"],\n  \"properties\": {\n    \"errors\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"tag\", \"error\", \"message\"],\n        \"properties\": {\n          \"tag\": { \"type\": \"string\" },\n          \"error\": { \"type\": \"string\" },\n          \"message\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Valid Requests",
+      "item": [
+        {
+          "name": "Get All Transactions - Default Parameters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test content type",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Parse response",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Get schema from collection variable",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "// Validate response against schema using tv4",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "// Test default pagination values",
+                  "pm.test(\"Default pagination values are correct\", function () {",
+                  "    pm.expect(responseJson['page']).to.equal(1);",
+                  "    pm.expect(responseJson['page-size']).to.equal(10);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions with Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Pagination parameters are correct\", function () {",
+                  "    pm.expect(responseJson['page']).to.equal(2);",
+                  "    pm.expect(responseJson['page-size']).to.equal(5);",
+                  "});",
+                  "",
+                  "pm.test(\"Items array length is within page size\", function () {",
+                  "    pm.expect(responseJson.items.length).to.be.at.most(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?page=2&page-size=5",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "page-size",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions with Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "// Test that returned transactions are within date range",
+                  "if (responseJson.items && responseJson.items.length > 0) {",
+                  "    pm.test(\"Transactions are within specified date range\", function () {",
+                  "        const startDate = new Date('2021-01-01');",
+                  "        const endDate = new Date('2021-12-31');",
+                  "        ",
+                  "        responseJson.items.forEach(item => {",
+                  "            const transactionDate = new Date(item.date);",
+                  "            pm.expect(transactionDate).to.be.at.least(startDate);",
+                  "            pm.expect(transactionDate).to.be.at.most(endDate);",
+                  "        });",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?start-date=2021-01-01&end-date=2021-12-31",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-12-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions with Transaction Kind Filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "// Test that returned transactions have correct kind",
+                  "if (responseJson.items && responseJson.items.length > 0) {",
+                  "    pm.test(\"All transactions have specified kind\", function () {",
+                  "        const allowedKinds = ['dep', 'wdw'];",
+                  "        responseJson.items.forEach(item => {",
+                  "            pm.expect(allowedKinds).to.include(item.kind);",
+                  "        });",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?transaction-kind=dep,wdw",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "transaction-kind",
+                  "value": "dep,wdw"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions with Sorting",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+            
+                  "// Test sorting order if multiple items exist",
+                  "if (responseJson.items && responseJson.items.length > 1) {",
+                  "    pm.test(\"Items are sorted by amount in descending order\", function () {",
+                  "        for (let i = 0; i < responseJson.items.length - 1; i++) {",
+                  "            pm.expect(responseJson.items[i].amount).to.be.at.least(responseJson.items[i + 1].amount);",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?sort-by=amount&sort-order=desc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "amount"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation Error Tests",
+      "item": [
+        {
+          "name": "Invalid Page Number",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains page validation\", function () {",
+                  "    const pageError = responseJson.errors.find(err => err.tag === 'page');",
+                  "    pm.expect(pageError).to.not.be.undefined;",
+                  "    pm.expect(pageError.error).to.equal('InvalidValue');",
+                  "    pm.expect(pageError.message).to.include('Page must be >= 1');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?page=0",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Page Size",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains page-size validation\", function () {",
+                  "    const pageSizeError = responseJson.errors.find(err => err.tag === 'page-size');",
+                  "    pm.expect(pageSizeError).to.not.be.undefined;",
+                  "    pm.expect(pageSizeError.error).to.equal('InvalidValue');",
+                  "    pm.expect(pageSizeError.message).to.include('Page size must be between 1 and 100');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?page-size=101",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "page-size",
+                  "value": "101"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Transaction Kind",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains transaction-kind validation\", function () {",
+                  "    const kindError = responseJson.errors.find(err => err.tag === 'transaction-kind');",
+                  "    pm.expect(kindError).to.not.be.undefined;",
+                  "    pm.expect(kindError.error).to.equal('InvalidValue');",
+                  "    pm.expect(kindError.message).to.include('Unsupported transaction kind');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?transaction-kind=invalid",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "transaction-kind",
+                  "value": "invalid"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Sort Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains sort-by validation\", function () {",
+                  "    const sortError = responseJson.errors.find(err => err.tag === 'sort-by');",
+                  "    pm.expect(sortError).to.not.be.undefined;",
+                  "    pm.expect(sortError.error).to.equal('InvalidValue');",
+                  "    pm.expect(sortError.message).to.include('Unsupported sort field');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?sort-by=invalid-field",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "invalid-field"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Future Start Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains start-date validation\", function () {",
+                  "    const dateError = responseJson.errors.find(err => err.tag === 'start-date');",
+                  "    pm.expect(dateError).to.not.be.undefined;",
+                  "    pm.expect(dateError.error).to.equal('InvalidValue');",
+                  "    pm.expect(dateError.message).to.include('Start date cannot be in the future');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?start-date=2030-01-01",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2030-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains date-range validation\", function () {",
+                  "    const rangeError = responseJson.errors.find(err => err.tag === 'date-range');",
+                  "    pm.expect(rangeError).to.not.be.undefined;",
+                  "    pm.expect(rangeError.error).to.equal('InvalidValue');",
+                  "    pm.expect(rangeError.message).to.include('Start date cannot be after end date');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?start-date=2021-12-31&end-date=2021-01-01",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-12-31"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Date Range Too Large",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against error schema",
+                  "const errorSchemaStr = pm.collectionVariables.get('errorSchema');",
+                  "const errorSchema = JSON.parse(errorSchemaStr);",
+                  "",
+                  "pm.test(\"Response matches error schema\", function () {",
+                  "    const result = tv4.validate(responseJson, errorSchema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains date-range validation\", function () {",
+                  "    const rangeError = responseJson.errors.find(err => err.tag === 'date-range');",
+                  "    pm.expect(rangeError).to.not.be.undefined;",
+                  "    pm.expect(rangeError.error).to.equal('InvalidValue');",
+                  "    pm.expect(rangeError.message).to.include('Date range cannot exceed 365 days');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?start-date=2022-01-01&end-date=2023-12-31",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2022-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2023-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edge Cases",
+      "item": [
+        {
+          "name": "Empty Result Set",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "// Validate against schema",
+                  "const schemaStr = pm.collectionVariables.get('transactionSchema');",
+                  "const schema = JSON.parse(schemaStr);",
+                  "",
+                  "pm.test(\"Response matches transaction schema\", function () {",
+                  "    const result = tv4.validate(responseJson, schema);",
+                  "    pm.expect(result, tv4.error?.message).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Empty result has zero total count\", function () {",
+                  "    if (responseJson.items.length === 0) {",
+                  "        pm.expect(responseJson['total-count']).to.equal(0);",
+                  "        pm.expect(responseJson['total-pages']).to.equal(0);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?start-date=2024-01-01&end-date=2024-01-02",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2024-01-02"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Maximum Page Size",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "pm.test(\"Page size is correctly set to maximum\", function () {",
+                  "    pm.expect(responseJson['page-size']).to.equal(100);",
+                  "});",
+                  "",
+                  "pm.test(\"Items array length is within max page size\", function () {",
+                  "    pm.expect(responseJson.items.length).to.be.at.most(100);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?page-size=100",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "transactions" ],
+              "query": [
+                {
+                  "key": "page-size",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "get-transactions-env",
+  "name": "GetTransactions Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7263",
+      "description": "Base URL for the Finance Management API",
+      "enabled": true
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "description": "API Version",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

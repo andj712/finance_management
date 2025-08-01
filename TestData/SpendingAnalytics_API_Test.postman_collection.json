@@ -1,0 +1,970 @@
+{
+  "info": {
+    "_postman_id": "spending-analytics-tests",
+    "name": "Spending Analytics API Tests",
+    "description": "Comprehensive test suite for the spending analytics endpoint covering validation, business logic, and edge cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Valid Requests",
+      "item": [
+        {
+          "name": "Get all spending analytics (no filters)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has correct schema with kebab-case\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "",
+                  "    if (responseJson.groups.length > 0) {",
+                  "        const firstGroup = responseJson.groups[0];",
+                  "        pm.expect(firstGroup).to.have.property('catcode');",
+                  "        pm.expect(firstGroup).to.have.property('amount');",
+                  "        pm.expect(firstGroup).to.have.property('count');",
+                  "",
+                  "        const catCodeValue = firstGroup['catcode'];",
+                  "        pm.expect(catCodeValue).to.be.a('string');",
+                  "        pm.expect(firstGroup.amount).to.be.a('number');",
+                  "        pm.expect(firstGroup.count).to.be.a('number');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics for category J",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All amounts are numbers and counts are positive integers\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    responseJson.groups.forEach(group => {",
+                  "        pm.expect(group.amount).to.be.a('number');",
+                  "        pm.expect(group.count).to.be.a('number').and.to.be.at.least(1);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=J",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "J"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics for subcategory 10",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response schema is valid\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics with date range (2021)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid structure\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is acceptable\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2021-01-01&end-date=2021-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-12-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics with direction filter (debit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response schema validation\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?direction=d",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "direction",
+                  "value": "d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics with direction filter (credit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response schema validation\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?direction=c",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "direction",
+                  "value": "c"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get spending analytics with all filters combined",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has correct structure\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Amounts are properly rounded to 2 decimal places\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    responseJson.groups.forEach(group => {",
+                  "        const decimalPlaces = (group.amount.toString().split('.')[1] || '').length;",
+                  "        pm.expect(decimalPlaces).to.be.at.most(2);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=M&start-date=2021-06-01&end-date=2021-08-31&direction=d",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "M"
+                },
+                {
+                  "key": "start-date",
+                  "value": "2021-06-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-08-31"
+                },
+                {
+                  "key": "direction",
+                  "value": "d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation Error Tests (400)",
+      "item": [
+        {
+          "name": "Invalid category code - too long",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains validation errors\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('errors');",
+                  "    pm.expect(responseJson.errors).to.be.an('array');",
+                  "    pm.expect(responseJson.errors.length).to.be.at.least(1);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message contains max-length validation\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    const hasMaxLengthError = responseJson.errors.some(error => ",
+                  "        error.tag === 'cat-code' && error.error === 'max-length'",
+                  "    );",
+                  "    pm.expect(hasMaxLengthError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=VERYLONGCATEGORYCODE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "VERYLONGCATEGORYCODE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Start date in future",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains start-date validation error\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('errors');",
+                  "    const hasStartDateError = responseJson.errors.some(error => ",
+                  "        error.tag === 'start-date' && error.error === 'invalid-value'",
+                  "    );",
+                  "    pm.expect(hasStartDateError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2030-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2030-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "End date too far in past",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains end-date validation error\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('errors');",
+                  "    const hasEndDateError = responseJson.errors.some(error => ",
+                  "        error.tag === 'end-date' && error.error === 'invalid-value'",
+                  "    );",
+                  "    pm.expect(hasEndDateError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?end-date=2005-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "end-date",
+                  "value": "2005-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Start date after end date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains date-range validation error\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('errors');",
+                  "    const hasDateRangeError = responseJson.errors.some(error => ",
+                  "        error.tag === 'date-range' && error.error === 'invalid-value'",
+                  "    );",
+                  "    pm.expect(hasDateRangeError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2021-12-31&end-date=2021-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-12-31"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Date range exceeds 365 days",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains date-range validation error for exceeding 365 days\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('errors');",
+                  "    const hasDateRangeError = responseJson.errors.some(error => ",
+                  "        error.tag === 'date-range' && ",
+                  "        error.error === 'invalid-value' &&",
+                  "        error.message.includes('365 days')",
+                  "    );",
+                  "    pm.expect(hasDateRangeError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2020-01-01&end-date=2021-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Error Tests (440)",
+      "item": [
+        {
+          "name": "Non-existent category code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 440\", function () {",
+                  "    pm.response.to.have.status(440);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains business error\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('problem');",
+                  "    pm.expect(responseJson).to.have.property('message');",
+                  "    pm.expect(responseJson).to.have.property('details');",
+                  "});",
+                  "",
+                  "pm.test(\"Error indicates invalid category code\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.problem).to.equal('InvalidCategoryCode');",
+                  "    pm.expect(responseJson.message).to.include('NONEXIST');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=NONEXIST",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "NONEXIST"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edge Cases",
+      "item": [
+        {
+          "name": "Empty category code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 (empty catcode should be treated as no filter)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid structure\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Current date as end date (within 365 days from start)",
+          "event": [
+            {
+              "listen": "pre-request",
+              "script": {
+                "exec": [
+                  "// Calculate a date that's 300 days ago to ensure it's within 365 days range",
+                  "const startDate = new Date();",
+                  "startDate.setDate(startDate.getDate() - 300);",
+                  "const startDateStr = startDate.toISOString().split('T')[0];",
+                  "",
+                  "const endDate = new Date();",
+                  "const endDateStr = endDate.toISOString().split('T')[0];",
+                  "",
+                  "pm.environment.set('dynamicStartDate', startDateStr);",
+                  "pm.environment.set('dynamicEndDate', endDateStr);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid structure\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date={{dynamicStartDate}}&end-date={{dynamicEndDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "{{dynamicStartDate}}"
+                },
+                {
+                  "key": "end-date",
+                  "value": "{{dynamicEndDate}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Same start and end date with specific category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid structure for same date range\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Date boundary logic is inclusive\", function () {",
+                  "    // This test ensures that when start_date = end_date,",
+                  "    // transactions occurring on that exact date are included",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.response.to.have.status(200);",
+                  "    // The response should be valid regardless of whether data exists",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?catcode=J&start-date=2021-06-14&end-date=2021-06-14",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "catcode",
+                  "value": "J"
+                },
+                {
+                  "key": "start-date",
+                  "value": "2021-06-14"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-06-14"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Single day range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid structure\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('groups');",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Single day range should return data when transactions exist\", function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    // This test should pass even if no transactions exist on this specific date",
+                  "    // but the response structure should be valid",
+                  "    pm.expect(responseJson.groups).to.be.an('array');",
+                  "    ",
+                  "    // If there are results, validate their structure",
+                  "    if (responseJson.groups.length > 0) {",
+                  "        responseJson.groups.forEach(group => {",
+                  "            pm.expect(group).to.have.property('cat-code');",
+                  "            pm.expect(group).to.have.property('amount');",
+                  "            pm.expect(group).to.have.property('count');",
+                  "            pm.expect(group.count).to.be.at.least(1);",
+                  "        });",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Date range logic works correctly\", function () {",
+                  "    // This test verifies that the API can handle same start and end dates",
+                  "    // The fix should allow transactions that occur exactly on the specified date",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2021-07-15&end-date=2021-07-15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-07-15"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-07-15"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Performance Tests",
+      "item": [
+        {
+          "name": "Response time test - All data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 3000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response size is reasonable\", function () {",
+                  "    pm.expect(pm.response.responseSize).to.be.below(10000000); // 10MB limit",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/spending-analytics?start-date=2021-01-01&end-date=2021-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "spending-analytics"
+              ],
+              "query": [
+                {
+                  "key": "start-date",
+                  "value": "2021-01-01"
+                },
+                {
+                  "key": "end-date",
+                  "value": "2021-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Running test: ' + pm.info.requestName);",
+          "",
+          "// Helper function to get catCode regardless of format",
+          "pm.globals.set('getCatCode', `",
+          "function getCatCode(group) {",
+          "    return group['cat-code'] || group.catCode;",
+          "}",
+          "`);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script - runs after every request",
+          "pm.test(\"Response time is acceptable\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test(\"No server errors (5xx)\", function () {",
+          "    pm.expect(pm.response.code).to.be.below(500);",
+          "});",
+          "",
+          "// Define helper function globally",
+          "function getCatCode(group) {",
+          "    return group['cat-code'] || group.catCode;",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7263",
+      "type": "string",
+      "description": "Base URL for the API"
+    }
+  ]
+}

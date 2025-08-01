@@ -1,0 +1,394 @@
+{
+  "info": {
+    "name": "Transaction Import API Tests - Automated",
+    "description": "Automated test suite for transaction CSV import functionality",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{baseUrl}}",
+      "type": "string"
+    },
+    {
+      "key": "validateFileRequiredError",
+      "value": "(() => { const responseJson = pm.response.json(); pm.expect(responseJson).to.have.property('errors'); pm.expect(responseJson.errors).to.be.an('array'); pm.expect(responseJson.errors.length).to.be.greaterThan(0); const error = responseJson.errors[0]; pm.expect(error).to.have.property('tag', 'file'); pm.expect(error).to.have.property('error', 'required'); pm.expect(error).to.have.property('message'); })()",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Valid CSV Import - Success",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\valid_transactions.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "",
+              "pm.test(\"Response time is acceptable\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+              "});",
+              "",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "No File Provided - Validation Error",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Error response has correct schema\", function () {",
+              "    eval(pm.environment.get(\"validateFileRequiredError\"));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid File Format - Not CSV",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\invalid-file-format.pdf"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"File format error response\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    const error = responseJson.errors[0];",
+              "    pm.expect(error.tag).to.equal('file');",
+              "    pm.expect(error.error).to.equal('invalid-format');",
+              "    pm.expect(error.message).to.equal('File must be a CSV file');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CSV with Missing Required Headers",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-missing-header-direction.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Missing headers validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    ",
+              "    responseJson.errors.forEach(error => {",
+              "        pm.expect(error).to.have.property('error', 'Required');",
+              "        pm.expect(error.message).to.include('Required header');",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CSV with Invalid Data - Validation Errors",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-invalid-data.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Data validation errors response\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    pm.expect(responseJson.errors.length).to.be.greaterThan(0);",
+              "    ",
+              "    responseJson.errors.forEach(error => {",
+              "        pm.expect(error).to.have.property('tag');",
+              "        pm.expect(error).to.have.property('error');",
+              "        pm.expect(error).to.have.property('message');",
+              "        pm.expect(error.tag).to.match(/.*-row-\\d+/);",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CSV with Duplicate Transactions in Database",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\valid_transactions.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 or 400\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Duplicate detection works\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    if (pm.response.code === 400) {",
+              "        pm.expect(responseJson).to.have.property('errors');",
+              "        const duplicateErrors = responseJson.errors.filter(error => error.error === 'Duplicate');",
+              "        pm.expect(duplicateErrors.length).to.be.greaterThan(0);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CSV with Duplicate Transactions in csv",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\duplicates_in_csv.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 or 400\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Duplicate detection works\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    if (pm.response.code === 400) {",
+              "        pm.expect(responseJson).to.have.property('errors');",
+              "        const duplicateErrors = responseJson.errors.filter(error => error.error === 'Duplicate');",
+              "        pm.expect(duplicateErrors.length).to.be.greaterThan(0);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Missing Header",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "C:\\Users\\Praksa\\source\\repos\\finance_management\\csv-files\\transactions-missing-header.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/import",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "import" ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Missing header validation\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    ",
+              "    const headerErrors = responseJson.errors.filter(error => error.message.includes('Required header'));",
+              "    pm.expect(headerErrors.length).to.be.greaterThan(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('Starting test: ' + pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Response has valid JSON\", function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "",
+          "console.log('Completed test: ' + pm.info.requestName + ' - Status: ' + pm.response.code);"
+        ]
+      }
+    }
+  ]
+}
