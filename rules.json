@@ -1,0 +1,129 @@
+{
+  "Rules": [
+    {
+      "Title": "When beneficiary name contains 'chevron' or 'shell'",
+      "CatCode": "4",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%chevron%' OR LOWER(\"BeneficiaryName\") LIKE '%shell%'"
+    },
+    {
+      "Title": "Groceries (MCC 5499 or Lidl/Delhaize)",
+      "CatCode": "38",
+      "Predicate": "\"MccCode\" = 5499 OR LOWER(\"BeneficiaryName\") LIKE '%lidl%' OR LOWER(\"BeneficiaryName\") LIKE '%delhaize%'"
+    },
+    {
+      "Title": "Parking (MCC 7523 or City Parkings)",
+      "CatCode": "5",
+      "Predicate": "\"MccCode\" = 7523 OR LOWER(\"BeneficiaryName\") LIKE '%city parkings%'"
+    },
+    {
+      "Title": "Books & Tuition (MCC 5192,8299 or Book Depository/Faculty of Contemporary Arts)",
+      "CatCode": "17",
+      "Predicate": "\"MccCode\" IN (5192,8299) OR LOWER(\"BeneficiaryName\") LIKE '%book depository%' OR LOWER(\"BeneficiaryName\") LIKE '%faculty of contemporary arts%'"
+    },
+    {
+      "Title": "Spa & Massage (MCC 8050 or Serenity Wellnes)",
+      "CatCode": "82",
+      "Predicate": "\"MccCode\" = 8050 OR LOWER(\"BeneficiaryName\") LIKE '%serenity wellnes%'"
+    },
+    {
+      "Title": "Electronics & Software (MCC 5045,5733 or Adobe)",
+      "CatCode": "90",
+      "Predicate": "\"MccCode\" IN (5045,5733) OR LOWER(\"BeneficiaryName\") LIKE '%adobe%'"
+    },
+    {
+      "Title": "Gym (MCC 7394 or Fit and Fun)",
+      "CatCode": "47",
+      "Predicate": "\"MccCode\" = 7394 OR LOWER(\"BeneficiaryName\") LIKE '%fit and fun%'"
+    },
+    {
+      "Title": "Life Insurance (Generali)",
+      "CatCode": "33",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%generali%'"
+    },
+    {
+      "Title": "Bank Fees (Bank of America)",
+      "CatCode": "26",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%bank of america%'"
+    },
+    {
+      "Title": "Mobile Phone (A1 Telecom/T-Mobile)",
+      "CatCode": "11",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%a1 telecom%' OR LOWER(\"BeneficiaryName\") LIKE '%t-mobile%'"
+    },
+    {
+      "Title": "Home Services (Home Cleaning Service)",
+      "CatCode": "56",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%home cleaning service%'"
+    },
+    {
+      "Title": "Rental Car & Taxi (Hertz)",
+      "CatCode": "105",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%hertz%'"
+    },
+    {
+      "Title": "Movies & DVDs (Hulu)",
+      "CatCode": "21",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%hulu%'"
+    },
+    {
+      "Title": "Sports (Table Tennis/Pingpong)",
+      "CatCode": "53",
+      "Predicate": "LOWER(\"BeneficiaryName\") LIKE '%table tenis%' OR LOWER(\"BeneficiaryName\") LIKE '%pingpong%'"
+    },
+    {
+      "Title": "When mcc is 5811",
+      "CatCode": "39",
+      "Predicate": "\"MccCode\" = 5811"
+    },
+    {
+      "Title": "Gas & Fuel (MCC 7519,5983)",
+      "CatCode": "4",
+      "Predicate": "\"MccCode\" IN (7519,5983)"
+    },
+    {
+      "Title": "Clothing (MCC 5655)",
+      "CatCode": "89",
+      "Predicate": "\"MccCode\" = 5655"
+    },
+    {
+      "Title": "Pet Food & Supplies (MCC 5995)",
+      "CatCode": "85",
+      "Predicate": "\"MccCode\" = 5995"
+    },
+    {
+      "Title": "Home Supplies (MCC 5200)",
+      "CatCode": "58",
+      "Predicate": "\"MccCode\" = 5200"
+    },
+    {
+      "Title": "Doctors & Dentists (MCC 8011)",
+      "CatCode": "46",
+      "Predicate": "\"MccCode\" = 8011"
+    },
+    {
+      "Title": "Pharmacies (MCC 5912)",
+      "CatCode": "50",
+      "Predicate": "\"MccCode\" = 5912"
+    },
+    {
+      "Title": "Beauty & Barber Shops (MCC 7230)",
+      "CatCode": "80",
+      "Predicate": "\"MccCode\" = 7230"
+    },
+    {
+      "Title": "Insurance Premiums (MCC 6300)",
+      "CatCode": "48",
+      "Predicate": "\"MccCode\" = 6300"
+    },
+    {
+      "Title": "Gift Shops (MCC 5947)",
+      "CatCode": "42",
+      "Predicate": "\"MccCode\" = 5947"
+    },
+    {
+      "Title": "Tax Payments (MCC 9311)",
+      "CatCode": "96",
+      "Predicate": "\"MccCode\" = 9311"
+    }
+  ]
+}

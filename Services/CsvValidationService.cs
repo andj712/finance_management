@@ -134,7 +134,7 @@ namespace finance_management.Services
                 }
             }
 
-            // MCC Code (optional)
+            // MCC Code
             if (!string.IsNullOrWhiteSpace(csvDto.Mcc))
             {
                 if (int.TryParse(csvDto.Mcc, out var mccInt) && Enum.IsDefined(typeof(MccCodeEnum), mccInt))

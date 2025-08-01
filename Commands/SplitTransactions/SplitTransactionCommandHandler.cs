@@ -47,13 +47,31 @@ namespace finance_management.Commands.SplitTransactions
             {
                 for (int i = 0; i < request.Splits.Count; i++)
                 {
-                    if (string.IsNullOrWhiteSpace(request.Splits[i].CatCode))
+                    var split = request.Splits[i];
+
+                    // Provera da je kategorija uneta
+                    if (string.IsNullOrWhiteSpace(split.CatCode))
                     {
                         errors.Add(new ValidationError
                         {
                             Tag = $"splits[{i}].cat-code",
                             Error = ErrorEnum.Required.ToString(),
                             Message = "Category code is required"
+                        });
+                    }
+                    else
+                    {
+                        split.CatCode = split.CatCode.ToUpper();
+                    }
+
+                    // Provera da je iznos pozitivan
+                    if (split.Amount <= 0)
+                    {
+                        errors.Add(new ValidationError
+                        {
+                            Tag = $"splits[{i}].amount",
+                            Error = ErrorEnum.Invalid.ToString(),
+                            Message = "Amount must be greater than zero"
                         });
                     }
                 }
@@ -83,9 +101,9 @@ namespace finance_management.Commands.SplitTransactions
                 {
                     throw new BusinessException(new BusinessError
                     {
-                        Problem = "transaction-not-found",
-                        Message = "Transaction not found",
-                        Details = $"Transaction with ID {request.TransactionId} does not exist"
+                        Problem = "category-not-found",
+                        Message = "Category not found",
+                        Details = $"Category with ID {split.CatCode} does not exist"
                     });
                 }
             }

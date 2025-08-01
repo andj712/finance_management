@@ -8,7 +8,7 @@ namespace finance_management.Commands.SplitTransactions
 {
     public class SplitTransactionCommand : IRequest<Unit>
     {
-        
+        [JsonIgnore]
         public string TransactionId { get; set; }
         
         public List<SingleCategorySplit> Splits { get; set; } 

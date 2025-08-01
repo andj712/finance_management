@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using CsvHelper;
+using finance_management.Commands.Auto_Categorize;
 using finance_management.Commands.CategorizeSingleTransaction;
 using finance_management.Commands.ImportTransactions;
 using finance_management.Commands.SplitTransactions;
 using finance_management.DTOs.CategorizeTransaction;
 using finance_management.DTOs.GetTransactions;
+using finance_management.DTOs.ImportTransaction;
 using finance_management.Models;
 using finance_management.Queries.GetTransactions;
 using finance_management.Validations.Errors;
@@ -31,7 +33,9 @@ namespace finance_management.Controllers
             _mediator = mediator;
         }
 
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpGet]
         public async Task<IActionResult> GetAllTransactions([FromQuery] GetTransactionsQuery query)
         {
@@ -55,92 +59,126 @@ namespace finance_management.Controllers
 
  
         }
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpPost("import")]
-        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionsCommand command)
+        public async Task<IActionResult> ImportTransactions([FromForm] ImportTransactionRequest request)
         {
-            if (command?.CsvFile == null || command.CsvFile.Length == 0)
+            try
             {
-                return BadRequest(new ValidationResponse
+                var file = request.File;
+
+                if (file == null || file.Length == 0)
                 {
-                    Errors = new List<ValidationError>
+                    throw new ValidationException(new List<ValidationError>
                     {
                         new ValidationError
                         {
                             Tag = "file",
-                            Error = ErrorEnum.Required.ToString(),
+                            Error = "required",
                             Message = "CSV file is required"
                         }
-                    }
-                });
-            }
+                    });
+                        }
 
-           
-            var result = await _mediator.Send(command);
-
-            if (result.ValidationErrors.Any() && result.ImportedCount == 0)
-            {
-                return BadRequest(new ValidationResponse
+                if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    Errors = result.ValidationErrors
-                });
+                            throw new ValidationException(new List<ValidationError>
+                    {
+                        new ValidationError
+                        {
+                            Tag = "file",
+                            Error = "invalid-format",
+                            Message = "File must be a CSV file"
+                        }
+                    });
+                }
+
+                var command = new ImportTransactionsCommand { CsvFile = file };
+                await _mediator.Send(command);
+                return Ok(new { message = "Import successful" });
             }
-
-            //return Ok(new
-            //{
-            //    message = "Import completed",
-            //    processedCount = result.ProcessedCount,
-            //    importedCount = result.ImportedCount,
-            //    skippedCount = result.SkippedCount,
-            //    logFileName = result.LogFileName,
-            //    errors = result.ValidationErrors
-            //});
-            //da ne bi vracao error i logfile ako je prazna lista gresaka koristila sam dictionary
-            var response = new Dictionary<string, object>
+            catch (ValidationException vex)
             {
-                ["message"] = "Import completed",
-                ["processedCount"] = result.ProcessedCount,
-                ["importedCount"] = result.ImportedCount,
-                ["skippedCount"] = result.SkippedCount,
-            };
-
-            if (result.ValidationErrors != null && result.ValidationErrors.Any())
-            {
-                response["logFileName"] = result.LogFileName;
-                response["errors"] = result.ValidationErrors;
+                return BadRequest(new ValidationResponse { Errors = vex.Errors });
             }
-
-            return Ok(response);
+            catch (BusinessException bex)
+            {
+                return StatusCode(440, new { error = bex.Error });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred during import" });
+            }
         }
-
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/categorize")]
         public async Task<IActionResult> CategorizeTransaction([FromRoute] string id, [FromBody] CategorizeTransactionRequest request)
         {
-            var command = new CategorizeTransactionCommand
-            {
-                TransactionId = id,
-                CatCode = request.CatCode
-            };
-
-            var result = await _mediator.Send(command);
-
-            if (result.ValidationErrors.Any())
-            {
-                return BadRequest(new ValidationResponse
+            try{ 
+               
+                if (request == null || string.IsNullOrWhiteSpace(request.CatCode))
                 {
-                    Errors = result.ValidationErrors
-                });
-            }
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "catcode",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Category code is required"
+                            }
 
-            if (result.BusinessError != null)
-            {
-                return StatusCode(440, result.BusinessError);
-            }
+                   });
+                }
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
 
-            return Ok(new
+                   });
+                }
+                var command = new CategorizeTransactionCommand
+                {
+                    TransactionId = id,
+                    CatCode = request.CatCode
+                };
+
+                var result = await _mediator.Send(command);
+
+                if (result.ValidationErrors.Any())
+                {
+                    return BadRequest(new ValidationResponse
+                    {
+                        Errors = result.ValidationErrors
+                    });
+                }
+
+                if (result.BusinessError != null)
+                {
+                    return StatusCode(440, result.BusinessError);
+                }
+
+                return Ok();
+        }
+             catch (ValidationException vex)
             {
-                message = "Transaction categorized successfully"
-            });
+                return BadRequest(new ValidationResponse { Errors = vex.Errors });
+            }
+            catch (BusinessException bex)
+            {
+                return StatusCode(440, new { error = bex.Error });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred during import" });
+            }
         }
 
 
@@ -148,17 +186,41 @@ namespace finance_management.Controllers
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 440)]
         [HttpPost("{id}/split")]
-        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] List<SingleCategorySplit> splits )
+        public async Task<IActionResult> Split([FromRoute] string id, [FromBody] SplitTransactionCommand command)
         {
+
             try
             {
-                var command = new SplitTransactionCommand
+                if (string.IsNullOrWhiteSpace(id))
                 {
-                    TransactionId = id,
-                    Splits = splits,
-                };
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
+
+                   });
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ValidationException(new List<ValidationError>
+                        {
+                            new ValidationError{
+                                Tag = "id",
+                                Error = ErrorEnum.Required.ToString(),
+                                Message = "Id is required"
+                            }
+
+                   });
+                }
+
+                command.TransactionId = id;
+                
                 await _mediator.Send(command);
-                return Ok();
+                return Ok(new { message = "Transaction split successfully" });
             }
             catch (ValidationException ex)
             {
@@ -179,8 +241,13 @@ namespace finance_management.Controllers
             }
         }
 
-       
-
+        [HttpPost("auto-categorize")]
+        public async Task<IActionResult> AutoCategorize()
+        {
+            var categorizedCount = await _mediator.Send(new AutoCategorizeTransactionCommand());
+            return Ok(new { categorized = categorizedCount });
+        }
+        
 
     }
 

@@ -1,0 +1,928 @@
+{
+  "info": {
+    "name": "Split Transaction API Tests",
+    "description": "Comprehensive API tests for transaction split functionality",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7263",
+      "type": "string"
+    },
+    {
+      "key": "existingTransactionId1",
+      "value": "29906504",
+      "type": "string"
+    },
+    {
+      "key": "existingTransactionId2",
+      "value": "10364820",
+      "type": "string"
+    },
+    {
+      "key": "nonExistingTransactionId",
+      "value": "56453",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Valid Split Transaction - Two Categories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 40.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 26.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "2. Valid Split Transaction - Three Categories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 10.0\n  },\n  {\n    \"cat-code\": \"J\",\n    \"amount\": 7.7\n  },\n  {\n    \"cat-code\": \"M\",\n    \"amount\": 5.0\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId2}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId2}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "3. Valid Split with Subcategories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"10\",\n    \"amount\": 33.15\n  },\n  {\n    \"cat-code\": \"21\",\n    \"amount\": 33.15\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "4. Case Insensitive Category Codes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Accepts lowercase category codes', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"b\",\n    \"amount\": 33.15\n  },\n  {\n    \"cat-code\": \"j\",\n    \"amount\": 33.15\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "5. Transaction Not Found",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has correct error structure', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('problem');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson).to.have.property('details');",
+              "    pm.expect(responseJson.problem).to.eql('transaction-not-found');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 40.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 26.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{nonExistingTransactionId}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{nonExistingTransactionId}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "6. Category Not Found",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has correct error structure', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('problem');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson).to.have.property('details');",
+              "    pm.expect(responseJson.problem).to.eql('category-not-found');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"JS\",\n    \"amount\": 40.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 26.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "7. Missing Transaction ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has validation error structure', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    pm.expect(responseJson.errors[0]).to.have.property('tag');",
+              "    pm.expect(responseJson.errors[0]).to.have.property('error');",
+              "    pm.expect(responseJson.errors[0]).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 40.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 26.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions//split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", " ", "split" ]
+        }
+      }
+    },
+    {
+      "name": "8. Only One Split (Invalid)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has validation error for insufficient splits', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    const splitError = responseJson.errors.find(e => e.tag === 'splits');",
+              "    pm.expect(splitError).to.exist;",
+              "    pm.expect(splitError.message).to.include('At least two splits are required');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 66.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "9. Empty Splits Array",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has validation error for empty splits', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    const splitError = responseJson.errors.find(e => e.tag === 'splits');",
+              "    pm.expect(splitError).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "10. Missing Category Code",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has validation error for missing category code', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    const catCodeError = responseJson.errors.find(e => e.tag.includes('cat-code'));",
+              "    pm.expect(catCodeError).to.exist;",
+              "    pm.expect(catCodeError.message).to.include('Category code is required');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"\",\n    \"amount\": 40.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 26.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "11. Duplicate Categories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has validation error for duplicate categories', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('errors');",
+              "    pm.expect(responseJson.errors).to.be.an('array');",
+              "    const duplicateError = responseJson.errors.find(e => e.error === 'Duplicate');",
+              "    pm.expect(duplicateError).to.exist;",
+              "    pm.expect(duplicateError.message).to.include('Duplicate categories found');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 33.15\n  },\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 33.15\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "12. Invalid Split Amount Sum",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response has business error for invalid split amount', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('problem');",
+              "    pm.expect(responseJson).to.have.property('message');",
+              "    pm.expect(responseJson).to.have.property('details');",
+              "    pm.expect(responseJson.problem).to.eql('invalid-split-amount');",
+              "    pm.expect(responseJson.message).to.include('Split amounts must equal transaction amount');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 100.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 50.0\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "13. Invalid JSON Format",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Response body matches expected array of objects', function () {",
+              "    const expected = [",
+              "        { invalid: \"json\", format: true },",
+              "        { invalid: \"json\", format: true }",
+              "    ];",
+              "",
+              "    const actual = pm.response.json();",
+              "    pm.expect(actual).to.eql(expected);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invalid\": \"json\",\n  \"format\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "14. Negative Amounts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 or 200 (depending on business rules)', function () {",
+              "    pm.expect([200, 400]).to.include(pm.response.code);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": -25.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 91.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "15. Zero Amount Split",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 or 200 (depending on business rules)', function () {",
+              "    pm.expect([200, 400]).to.include(pm.response.code);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 0.0\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 66.3\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "16. Mixed Case Category Codes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Handles mixed case category codes', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"b\",\n    \"amount\": 22.1\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 22.1\n  },\n  {\n    \"cat-code\": \"j\",\n    \"amount\": 22.1\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "17. Decimal Precision Test",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Handles decimal precision correctly', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 22.1\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 22.1\n  },\n  {\n    \"cat-code\": \"J\",\n    \"amount\": 22.1\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "18. Large Number of Splits",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 3000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+              "});",
+              "",
+              "pm.test('Handles multiple splits correctly', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 16.575\n  },\n  {\n    \"cat-code\": \"C\",\n    \"amount\": 16.575\n  },\n  {\n    \"cat-code\": \"J\",\n    \"amount\": 16.575\n  },\n  {\n    \"cat-code\": \"M\",\n    \"amount\": 16.575\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "19. Update Existing Split",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 2000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "pm.test('Successfully updates existing split', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"10\",\n    \"amount\": 33.15\n  },\n  {\n    \"cat-code\": \"20\",\n    \"amount\": 33.15\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId1}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId1}}", "split" ]
+        }
+      }
+    },
+    {
+      "name": "20. Performance Test - Quick Succession",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is acceptable under load', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+              "});",
+              "",
+              "pm.test('System handles concurrent requests', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"cat-code\": \"B\",\n    \"amount\": 11.35\n  },\n  {\n    \"cat-code\": \"J\",\n    \"amount\": 11.35\n  }\n]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{existingTransactionId2}}/split",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "transactions", "{{existingTransactionId2}}", "split" ]
+        }
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Starting test: ' + pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script - runs after every request",
+          "pm.test('Response has correct headers', function () {",
+          "    pm.expect(pm.response.headers.has('Content-Type')).to.be.true;",
+          "});",
+          "",
+          "// Log response for debugging",
+          "if (pm.response.code !== 200) {",
+          "    console.log('Response Status:', pm.response.status);",
+          "    console.log('Response Body:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

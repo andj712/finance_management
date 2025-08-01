@@ -63,18 +63,22 @@ namespace finance_management.Repository
         public async Task<SpendingAnalytics> GetSpendingAnalyticsAsync(string catCode, DateTime? startDate, DateTime? endDate, DirectionEnum? direction)
         {
             //davanje default vrednosti za start i end date za slucaj da su null
-            startDate ??= DateTime.Today.AddDays(-365);
-            endDate ??= DateTime.Today;
+            //ovo je bila ideja ali posto su podaci iz 2021. moram da promenim 
+            //startDate ??= DateTime.Today.AddDays(-365);
+            //endDate ??= DateTime.Today;
+
+            startDate ??= new DateTime(2021, 1, 1);
+            endDate ??= new DateTime(2022, 1, 1);
 
             startDate = startDate.Value.ToUniversalTime();
-            endDate = endDate.Value.ToUniversalTime();
+            endDate = endDate.Value.AddDays(1).ToUniversalTime();//mora jer se racuna u 00 00 sledeci dan i onda ne pokrije slucajeve izmedju ako je isti start date i end date 
 
             var results = new List<SpendingAnalyticsInCategory>();
 
             // transakcije sa splitovima
             var splitQuery = _context.Transactions
                 .Join(_context.Splits, t => t.Id, s => s.TransactionId, (t, s) => new { t, s })
-                .Where(x => x.t.Date > startDate.Value && x.t.Date < endDate.Value);
+                .Where(x => x.t.Date >= startDate.Value && x.t.Date < endDate.Value);
 
             if (direction != null)
                 splitQuery = splitQuery.Where(x => x.t.Direction == direction);

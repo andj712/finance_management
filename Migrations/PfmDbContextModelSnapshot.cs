@@ -51,7 +51,7 @@ namespace finance_management.Migrations
                         .HasColumnType("character varying(15)")
                         .HasColumnOrder(0);
 
-                    b.Property<string>("CatCode")
+                    b.Property<string>("Catcode")
                         .HasColumnType("character varying(10)")
                         .HasColumnOrder(1);
 
@@ -59,9 +59,9 @@ namespace finance_management.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("double precision");
 
-                    b.HasKey("TransactionId", "CatCode");
+                    b.HasKey("TransactionId", "Catcode");
 
-                    b.HasIndex("CatCode");
+                    b.HasIndex("Catcode");
 
                     b.ToTable("Splits");
                 });
@@ -80,7 +80,7 @@ namespace finance_management.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("CatCode")
+                    b.Property<string>("Catcode")
                         .HasColumnType("character varying(10)");
 
                     b.Property<string>("Currency")
@@ -103,12 +103,12 @@ namespace finance_management.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("MccCode")
+                    b.Property<int?>("Mcc")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CatCode");
+                    b.HasIndex("Catcode");
 
                     b.ToTable("Transactions");
                 });
@@ -127,7 +127,7 @@ namespace finance_management.Migrations
                 {
                     b.HasOne("finance_management.Models.Category", "Category")
                         .WithMany("Splits")
-                        .HasForeignKey("CatCode")
+                        .HasForeignKey("Catcode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -146,7 +146,7 @@ namespace finance_management.Migrations
                 {
                     b.HasOne("finance_management.Models.Category", "Category")
                         .WithMany("Transactions")
-                        .HasForeignKey("CatCode")
+                        .HasForeignKey("Catcode")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Category");

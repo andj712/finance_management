@@ -13,13 +13,9 @@ namespace finance_management.Services
     public class TransactionService : ITransactionService
     {
         private readonly ITransactionRepository _repo;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<TransactionService> _logger;
-        public TransactionService(ITransactionRepository repo, IUnitOfWork unitOfWork, ILogger<TransactionService> logger)
+        public TransactionService(ITransactionRepository repo)
         {
             _repo = repo;
-            _unitOfWork = unitOfWork;
-            _logger = logger;
         }
 
         public async Task<List<Transaction>> GetAllTransactionsAsync(

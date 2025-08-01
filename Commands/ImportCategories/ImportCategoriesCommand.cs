@@ -6,7 +6,7 @@ namespace finance_management.Commands.ImportCategories
 {
     public class ImportCategoriesCommand : IRequest<List<CategoryDto>>
     {
-        [FromForm(Name = "csv-file")]
+        [FromForm]
         public IFormFile File { get; set; } = null!;
     }
 }
